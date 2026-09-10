@@ -1,5 +1,6 @@
 import { API_BASE_URL, keycloak } from './auth';
 import type {
+  AuditResponse,
   InvoicesResponse,
   InvoiceView,
   Overview,
@@ -167,4 +168,14 @@ export const api = {
       `/api/v1/admin/invoices/${encodeURIComponent(id)}/void`,
       post(note ? { note } : {}),
     ),
+
+  audit: (params: {
+    action?: string;
+    subject?: string;
+    actor?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    page_size?: number;
+  }) => request<AuditResponse>(`/api/v1/admin/audit${query(params)}`),
 };

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { Layout } from './components/Layout';
 import { Loading } from './components/States';
+import { Audit } from './pages/Audit';
 import { Dashboard } from './pages/Dashboard';
 import { Invoices } from './pages/Invoices';
 import { Subscriptions } from './pages/Subscriptions';
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="felhasznalok/:subject" element={<UserDetail />} />
         <Route path="elofizetesek" element={<Subscriptions />} />
         <Route path="szamlazas" element={<Invoices />} />
+        <Route path="naplo" element={<Audit />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

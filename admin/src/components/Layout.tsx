@@ -6,6 +6,7 @@ const NAV = [
   { to: '/felhasznalok', label: 'Felhasználók', end: false },
   { to: '/elofizetesek', label: 'Előfizetések', end: false },
   { to: '/szamlazas', label: 'Számlázás', end: false },
+  { to: '/naplo', label: 'Napló', end: false },
 ];
 
 export function Layout() {

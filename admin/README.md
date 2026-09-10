@@ -77,6 +77,9 @@ csak a szerep más.
   lemondás / visszakapcsolás.
 - **Számlázás** – állapot és felhasználó szerinti szűrés, szűrésre vetített összesítők
   (nyitott, kifizetve, összesen), kifizetettre jelölés és sztornó.
+- **Napló** – ki, mikor, mit módosított. Művelet, dátumtartomány, felhasználó és admin szerint
+  szűrhető; minden soron kinyitható a művelet nyers paramétere. Ugyanez a lista rövidítve ott
+  van a felhasználó adatlapján is, „Előzmények” néven – támogatásnál ez az első kérdés.
 
 ## Pénzt érintő műveletek
 
@@ -88,7 +91,11 @@ Ez pénzügyi belső eszköz, ezért:
 - a szerver hibáit a felület szó szerint megmutatja (pl. „csak nyitott számla sztornózható”),
   nem nyeli le őket;
 - **valódi terhelés sehol nem történik.** A számla „kifizetve” állapota könyvelési jelölés:
-  a pénznek máshol kell beérkeznie.
+  a pénznek máshol kell beérkeznie;
+- **minden módosításról napló készül**: az előfizetés kiadása, csomagváltás, lemondás,
+  visszakapcsolás, számla kiállítása, kifizetettre jelölése és sztornózása egyaránt bejegyzést
+  ír a végrehajtó admin azonosítójával. A napló csak nő – törölni és szerkeszteni a felületről
+  nem lehet.
 
 ## A fizetési szolgáltató illesztési pontja
 
@@ -140,6 +147,6 @@ src/api.ts              tipizált admin API kliens, ApiError a szerver üzeneté
 src/hooks.ts            useAsync / useDebounced / usePlans
 src/format.ts           pénz-, dátum- és státuszformázás (hu-HU)
 src/components/         elrendezés, tábla-kiegészítők, modálisok, műveletek
-src/pages/              Vezérlőpult, Felhasználók, Adatlap, Előfizetések, Számlázás
+src/pages/              Vezérlőpult, Felhasználók, Adatlap, Előfizetések, Számlázás, Napló
 src/styles.css          a teljes stíluslap, CSS változókkal
 ```

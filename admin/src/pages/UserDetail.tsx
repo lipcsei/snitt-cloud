@@ -6,13 +6,79 @@ import { CreateInvoiceDialog, InvoiceActions } from '../components/InvoiceAction
 import { Page } from '../components/Layout';
 import { GrantDialog, SubscriptionActions } from '../components/SubscriptionActions';
 import { Banner, Empty, ErrorBox, Loading } from '../components/States';
-import { formatDate, formatDateTime, formatMoney } from '../format';
+import { auditActionLabel, formatDate, formatDateTime, formatMoney } from '../format';
 import { useAsync, usePlans } from '../hooks';
+
+const AUDIT_PREVIEW = 8;
+
+/**
+ * A felhasználóra vonatkozó utolsó admin műveletek. Támogatásnál ez az első
+ * kérdés ("mit csináltunk ezzel a fiókkal?"), ezért itt van, az adatlapon,
+ * nem csak a napló oldalon.
+ */
+function UserAudit({ subject, stamp }: { subject: string; stamp: number }) {
+  const { data, loading, error, reload } = useAsync(
+    () => api.audit({ subject, page_size: AUDIT_PREVIEW }),
+    [subject, stamp],
+  );
+
+  return (
+    <section className="panel">
+      <div className="panel__head">
+        <h2>Előzmények</h2>
+        <Link className="link" to={`/naplo?subject=${encodeURIComponent(subject)}`}>
+          Teljes napló
+        </Link>
+      </div>
+      {error ? <ErrorBox error={error} onRetry={reload} /> : null}
+      {loading && !data ? <Loading label="Előzmények betöltése…" /> : null}
+      {data && !error ? (
+        data.entries.length === 0 ? (
+          <Empty
+            title="Nincs előzmény"
+            hint="Ehhez a fiókhoz még nem nyúlt hozzá admin."
+          />
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mikor</th>
+                <th>Ki</th>
+                <th>Mit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.entries.map((e) => (
+                <tr key={e.id}>
+                  <td className="muted nowrap">{formatDateTime(e.at)}</td>
+                  <td>{e.actor_label || e.actor_subject}</td>
+                  <td>
+                    <span className="pill">{auditActionLabel(e.action)}</span>
+                    <div className="audit__summary">{e.summary}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      ) : null}
+      {data && data.total > data.entries.length ? (
+        <div className="panel__body">
+          <span className="muted">
+            Az utolsó {data.entries.length} bejegyzés látszik a(z) {data.total} közül.
+          </span>
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 export function UserDetail() {
   const { subject = '' } = useParams();
   const [notice, setNotice] = useState<string | null>(null);
   const [dialog, setDialog] = useState<'grant' | 'invoice' | null>(null);
+  // Minden sikeres művelet után az előzmények is újratöltenek.
+  const [stamp, setStamp] = useState(0);
 
   const { data, loading, error, reload } = useAsync(() => api.user(subject), [subject]);
   const plans = usePlans();
@@ -20,6 +86,7 @@ export function UserDetail() {
   const done = useCallback(
     (message: string) => {
       setNotice(message);
+      setStamp((n) => n + 1);
       reload();
     },
     [reload],
@@ -226,6 +293,8 @@ export function UserDetail() {
           </table>
         )}
       </section>
+
+      <UserAudit subject={user.subject} stamp={stamp} />
 
       {dialog === 'grant' && plans.data ? (
         <GrantDialog

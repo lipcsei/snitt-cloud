@@ -132,3 +132,34 @@ export type Overview = {
   plans: Plan[];
   warnings: string[];
 };
+
+export type AuditAction =
+  | 'subscription.grant'
+  | 'subscription.change_plan'
+  | 'subscription.cancel'
+  | 'subscription.reactivate'
+  | 'invoice.create'
+  | 'invoice.pay'
+  | 'invoice.void';
+
+export type AuditEntry = {
+  id: string;
+  at: string;
+  actor_subject: string;
+  actor_label: string;
+  action: AuditAction | string;
+  target_type: string;
+  target_id: string;
+  subject: string;
+  summary: string;
+  detail: Record<string, unknown>;
+};
+
+export type AuditResponse = {
+  entries: AuditEntry[];
+  page: number;
+  page_size: number;
+  total: number;
+  /** A szerver adja a szűrő legördülőjének a lehetséges műveleteit. */
+  actions: string[];
+};

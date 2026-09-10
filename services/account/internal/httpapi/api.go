@@ -43,6 +43,9 @@ type Store interface {
 	VoidInvoice(ctx context.Context, id, note string) (store.Invoice, error)
 
 	Overview(ctx context.Context) (store.Overview, error)
+
+	RecordAudit(ctx context.Context, in store.NewAuditEntry) (store.AuditEntry, error)
+	ListAudit(ctx context.Context, f store.AuditFilter) ([]store.AuditEntry, int, error)
 }
 
 // API a HTTP réteg összefogója.

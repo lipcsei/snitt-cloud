@@ -112,6 +112,8 @@ func (a *API) adminRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/admin/invoices/{id}", guard(a.handleGetInvoice))
 	mux.Handle("POST /api/v1/admin/invoices/{id}/pay", guard(a.handlePayInvoice))
 	mux.Handle("POST /api/v1/admin/invoices/{id}/void", guard(a.handleVoidInvoice))
+
+	mux.Handle("GET /api/v1/admin/audit", guard(a.handleListAudit))
 }
 
 // ---------- áttekintés ----------
@@ -446,10 +448,22 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "az előfizetés nem hozható létre")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditSubscriptionGrant,
+		TargetType: "subscription",
+		TargetID:   sub.ID,
+		Subject:    sub.Subject,
+		Summary: fmt.Sprintf("Előfizetés kiadva: %s csomag, %s, %d napra.",
+			plan.Name, moneyText(price, currency), days),
+		Detail: map[string]any{
+			"plan": plan.Key, "price_minor": price, "currency": currency,
+			"period_days": days, "period_end": end, "create_invoice": req.CreateInvoice,
+		},
+	})
 
 	if req.CreateInvoice && price > 0 {
 		due := now.Add(14 * 24 * time.Hour)
-		if _, err := a.store.CreateInvoice(r.Context(), store.NewInvoice{
+		inv, err := a.store.CreateInvoice(r.Context(), store.NewInvoice{
 			Subject:        sub.Subject,
 			SubscriptionID: &sub.ID,
 			AmountMinor:    price,
@@ -457,7 +471,8 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 			DueAt:          &due,
 			Provider:       a.billing.Name(),
 			Note:           "Kézzel kiállított számla a(z) " + plan.Name + " csomaghoz.",
-		}); err != nil {
+		})
+		if err != nil {
 			// Az előfizetés már él; a számla hiánya nem indokolja a művelet
 			// visszavonását, de az adminnak látnia kell.
 			a.log.ErrorContext(r.Context(), "számla kiállítása sikertelen", "error", err, "subscription_id", sub.ID)
@@ -467,6 +482,18 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		a.audit(r, store.NewAuditEntry{
+			Action:     store.AuditInvoiceCreate,
+			TargetType: "invoice",
+			TargetID:   inv.ID,
+			Subject:    inv.Subject,
+			Summary: fmt.Sprintf("Számla kiállítva az előfizetés kiadásakor: %s, %s.",
+				inv.Number, moneyText(inv.AmountMinor, inv.Currency)),
+			Detail: map[string]any{
+				"number": inv.Number, "amount_minor": inv.AmountMinor, "currency": inv.Currency,
+				"subscription_id": sub.ID, "due_at": due,
+			},
+		})
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"subscription": sub})
 }
@@ -531,6 +558,19 @@ func (a *API) handleChangeSubscription(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "a csomag nem váltható")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditSubscriptionChangePlan,
+		TargetType: "subscription",
+		TargetID:   sub.ID,
+		Subject:    sub.Subject,
+		Summary: fmt.Sprintf("Csomagváltás: %s → %s, %s.",
+			current.Plan, plan.Key, moneyText(price, currency)),
+		Detail: map[string]any{
+			"from_plan": current.Plan, "to_plan": plan.Key,
+			"from_price_minor": current.PriceMinor, "price_minor": price, "currency": currency,
+			"new_period": req.PeriodDays != nil, "period_end": expires,
+		},
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"subscription": sub})
 }
 
@@ -570,6 +610,21 @@ func (a *API) handleCancelSubscription(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "az előfizetés nem mondható le")
 		return
 	}
+	when := "azonnali hatállyal"
+	if req.AtPeriodEnd {
+		when = "a periódus végén (" + sub.CurrentPeriodEnd.Format(dateLayout) + ")"
+	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditSubscriptionCancel,
+		TargetType: "subscription",
+		TargetID:   sub.ID,
+		Subject:    sub.Subject,
+		Summary:    fmt.Sprintf("Előfizetés lemondva %s: %s csomag.", when, sub.Plan),
+		Detail: map[string]any{
+			"plan": sub.Plan, "at_period_end": req.AtPeriodEnd,
+			"period_end": sub.CurrentPeriodEnd, "status": sub.Status,
+		},
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"subscription": sub})
 }
 
@@ -617,6 +672,18 @@ func (a *API) handleReactivateSubscription(w http.ResponseWriter, r *http.Reques
 		a.writeStoreError(w, r, err, "az előfizetés nem kapcsolható vissza")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditSubscriptionReactivate,
+		TargetType: "subscription",
+		TargetID:   sub.ID,
+		Subject:    sub.Subject,
+		Summary: fmt.Sprintf("Előfizetés visszakapcsolva: %s csomag, a periódus vége %s.",
+			sub.Plan, sub.CurrentPeriodEnd.Format(dateLayout)),
+		Detail: map[string]any{
+			"plan": sub.Plan, "new_period": periodEnd != nil,
+			"period_end": sub.CurrentPeriodEnd, "status": sub.Status,
+		},
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"subscription": sub})
 }
 
@@ -745,6 +812,18 @@ func (a *API) handleCreateInvoice(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "a számla nem állítható ki")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditInvoiceCreate,
+		TargetType: "invoice",
+		TargetID:   inv.ID,
+		Subject:    inv.Subject,
+		Summary: fmt.Sprintf("Számla kiállítva: %s, %s.",
+			inv.Number, moneyText(inv.AmountMinor, inv.Currency)),
+		Detail: map[string]any{
+			"number": inv.Number, "amount_minor": inv.AmountMinor, "currency": inv.Currency,
+			"subscription_id": req.SubscriptionID, "due_at": due, "note": inv.Note,
+		},
+	})
 	writeJSON(w, http.StatusCreated, map[string]any{"invoice": inv})
 }
 
@@ -774,6 +853,18 @@ func (a *API) handlePayInvoice(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "a számla nem jelölhető kifizetettnek")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditInvoicePay,
+		TargetType: "invoice",
+		TargetID:   inv.ID,
+		Subject:    inv.Subject,
+		Summary: fmt.Sprintf("Számla kifizetettnek jelölve: %s, %s.",
+			inv.Number, moneyText(inv.AmountMinor, inv.Currency)),
+		Detail: map[string]any{
+			"number": inv.Number, "amount_minor": inv.AmountMinor, "currency": inv.Currency,
+			"paid_at": paidAt, "external_invoice_id": inv.ExternalInvoiceID,
+		},
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"invoice": inv})
 }
 
@@ -791,6 +882,18 @@ func (a *API) handleVoidInvoice(w http.ResponseWriter, r *http.Request) {
 		a.writeStoreError(w, r, err, "a számla nem sztornózható")
 		return
 	}
+	a.audit(r, store.NewAuditEntry{
+		Action:     store.AuditInvoiceVoid,
+		TargetType: "invoice",
+		TargetID:   inv.ID,
+		Subject:    inv.Subject,
+		Summary: fmt.Sprintf("Számla sztornózva: %s, %s. Indok: %s",
+			inv.Number, moneyText(inv.AmountMinor, inv.Currency), strings.TrimSpace(req.Note)),
+		Detail: map[string]any{
+			"number": inv.Number, "amount_minor": inv.AmountMinor,
+			"currency": inv.Currency, "note": strings.TrimSpace(req.Note),
+		},
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"invoice": inv})
 }
 

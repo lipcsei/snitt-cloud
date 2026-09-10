@@ -903,6 +903,52 @@ code {
 
 /* ---------- keskeny képernyő ---------- */
 
+/* ---------- napló ---------- */
+
+/* A táblában kattintható, de nem hivatkozás: a szűrőt állítja. Ezért gomb,
+   csak nem néz ki annak. */
+.link--quiet {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--faint);
+  cursor: pointer;
+  text-align: left;
+}
+
+.link--quiet:hover {
+  color: #a8c3ff;
+  text-decoration: underline;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.audit__summary {
+  margin-top: 5px;
+  max-width: 60ch;
+}
+
+.audit__detail {
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.audit__json {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--faint);
+  max-width: 60ch;
+  overflow-x: auto;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;

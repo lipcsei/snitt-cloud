@@ -72,3 +72,22 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
 export function daysUntil(iso: string): number {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
 }
+
+/**
+ * A napló műveleteinek magyar címkéi. A kulcs a szerver gépi neve; ismeretlen
+ * kulcsnál a nyers érték látszik, nem üres cella - a napló akkor is olvasható
+ * marad, ha a szerver új műveletet vezet be a felület előtt.
+ */
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  'subscription.grant': 'Előfizetés kiadva',
+  'subscription.change_plan': 'Csomagváltás',
+  'subscription.cancel': 'Előfizetés lemondva',
+  'subscription.reactivate': 'Előfizetés visszakapcsolva',
+  'invoice.create': 'Számla kiállítva',
+  'invoice.pay': 'Számla kifizetve',
+  'invoice.void': 'Számla sztornózva',
+};
+
+export function auditActionLabel(action: string): string {
+  return AUDIT_ACTION_LABELS[action] ?? action;
+}

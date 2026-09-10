@@ -95,3 +95,33 @@ CREATE TABLE IF NOT EXISTS invoices (
 CREATE INDEX IF NOT EXISTS invoices_subject_idx ON invoices (subject);
 CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices (status);
 CREATE INDEX IF NOT EXISTS invoices_issued_at_idx ON invoices (issued_at DESC);
+
+-- Admin napló. Ez pénzt érintő belső eszköz: minden módosító műveletről
+-- marad nyom arról, hogy KI, MIKOR, MIT csinált. A sorok soha nem
+-- módosulnak és nem törlődnek - a napló csak nő.
+--
+-- A summary emberi mondat (magyarul), a detail a művelet nyers paraméterei.
+-- A kettő szándékos redundancia: a summary akkor is olvasható marad, ha a
+-- kód később átalakul, a detail pedig akkor is elég, ha a summary kevés.
+CREATE TABLE IF NOT EXISTS admin_audit (
+    id            TEXT PRIMARY KEY,
+    at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    actor_subject TEXT NOT NULL,
+    -- Az adminról a tokenben látott címke (e-mail vagy felhasználónév).
+    -- Azért másoljuk ide, mert a Keycloak fiók később törölhető, a napló
+    -- viszont attól még legyen olvasható.
+    actor_label   TEXT NOT NULL DEFAULT '',
+    action        TEXT NOT NULL,
+    target_type   TEXT NOT NULL DEFAULT '',
+    target_id     TEXT NOT NULL DEFAULT '',
+    -- Az érintett felhasználó, ha a művelethez tartozik ilyen.
+    subject       TEXT NOT NULL DEFAULT '',
+    summary       TEXT NOT NULL DEFAULT '',
+    detail        JSONB NOT NULL DEFAULT '{}'::jsonb,
+    CONSTRAINT admin_audit_action_chk CHECK (action <> '')
+);
+
+CREATE INDEX IF NOT EXISTS admin_audit_at_idx ON admin_audit (at DESC);
+CREATE INDEX IF NOT EXISTS admin_audit_subject_idx ON admin_audit (subject);
+CREATE INDEX IF NOT EXISTS admin_audit_actor_idx ON admin_audit (actor_subject);
+CREATE INDEX IF NOT EXISTS admin_audit_action_idx ON admin_audit (action);

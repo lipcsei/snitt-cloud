@@ -9,6 +9,8 @@ Kicsi Go HTTP szolgáltatás a Snitt **opcionális felhő oldalához**. Két dol
    Ezt később a desktop app is le fogja kérdezni; a végpont már most létezik.
 3. **Admin API** – a belső admin felület ([`admin/`](../../admin)) mögötti végpontok:
    felhasználók, előfizetések, számlázás és összesítők. Csak `admin` realm szereppel.
+4. **Admin napló** – minden előfizetést és számlát módosító admin művelet nyomot hagy az
+   `admin_audit` táblában: ki, mikor, mit csinált.
 
 A desktop app ettől függetlenül, fiók nélkül is teljesen működik – lásd
 [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
@@ -122,6 +124,47 @@ A hívó le nem járt jogosultságai. **Az üres lista normál válasz, nem hiba
 A válasz szándékosan objektum, nem csupasz tömb: így később bővíthető a kliensek törése nélkül.
 Jogosultságot egyelőre nem ad ki API – kézzel, SQL-lel kerül a táblába.
 
+### `GET /api/v1/admin/audit`
+
+Az admin napló, legfrissebb elöl. Csak `admin` realm szereppel.
+
+Szűrők (mind opcionális): `action`, `subject` (érintett felhasználó), `actor` (a művelet
+végrehajtója), `from`, `to` (`2026-09-10` vagy teljes RFC3339; a `to` napra pontos alakja
+**bezárólag** értendő), `page`, `page_size`.
+
+```json
+{
+  "entries": [
+    {
+      "id": "9f1c…",
+      "at": "2026-09-10T19:12:00Z",
+      "actor_subject": "3f0c…",
+      "actor_label": "admin@snitt.video",
+      "action": "invoice.void",
+      "target_type": "invoice",
+      "target_id": "b21a…",
+      "subject": "7cd2…",
+      "summary": "Számla sztornózva: SNITT-2026-000042, 2 990,00 HUF. Indok: téves kiállítás",
+      "detail": { "number": "SNITT-2026-000042", "amount_minor": 299000, "currency": "HUF" }
+    }
+  ],
+  "page": 1,
+  "page_size": 50,
+  "total": 1,
+  "actions": ["subscription.grant", "…"]
+}
+```
+
+Az `actions` a szűrő lehetséges értékeit adja, hogy a felület ne másolja le a szerver listáját.
+
+**A napló csak nő**: bejegyzést módosítani vagy törölni egyetlen végpont sem tud. A naplózás a
+művelet UTÁN, külön írásban történik, és a bukása **nem** bukatja el a műveletet – a pénzt érintő
+lépés ilyenkor már megtörtént, egy hibás válasz csak félrevezetné az admint. A sikertelen
+naplóírás `ERROR` szinten kimegy a logba.
+
+Az `admin_audit` az account szolgáltatás adatbázisában van, tehát a
+[`deploy/scripts/backup.sh`](../../deploy/scripts/backup.sh) menti.
+
 ## Felépítés
 
 ```
@@ -129,5 +172,5 @@ cmd/server/main.go        indítás, graceful shutdown
 internal/config           env-alapú konfiguráció
 internal/auth             OIDC token-ellenőrzés + middleware (TokenVerifier interfész)
 internal/store            pgxpool, beágyazott schema.sql, lekérdezések
-internal/httpapi          routing, handlerek, CORS, tesztek
+internal/httpapi          routing, handlerek, CORS, admin napló, tesztek
 ```

@@ -103,6 +103,11 @@ type adminFake struct {
 	lastCancelAtEnd bool
 	lastNewInvoice  store.NewInvoice
 	createdInvoices int
+
+	// A napló külön hibát kap: a naplóírás bukása szándékosan nem bukatja
+	// el az admin műveletet, ezt csak külön kapcsolóval lehet előidézni.
+	audit    []store.AuditEntry
+	auditErr error
 }
 
 func (f *fakeStore) GetProfile(_ context.Context, subject string) (store.Profile, error) {
@@ -364,6 +369,45 @@ func (f *fakeStore) Overview(context.Context) (store.Overview, error) {
 	return f.admin.overview, nil
 }
 
+func (f *fakeStore) RecordAudit(_ context.Context, in store.NewAuditEntry) (store.AuditEntry, error) {
+	if f.admin.auditErr != nil {
+		return store.AuditEntry{}, f.admin.auditErr
+	}
+	e := store.AuditEntry{
+		ID:           fmt.Sprintf("audit-%d", len(f.admin.audit)+1),
+		At:           time.Now().UTC(),
+		ActorSubject: in.ActorSubject,
+		ActorLabel:   in.ActorLabel,
+		Action:       in.Action,
+		TargetType:   in.TargetType,
+		TargetID:     in.TargetID,
+		Subject:      in.Subject,
+		Summary:      in.Summary,
+		Detail:       in.Detail,
+	}
+	f.admin.audit = append(f.admin.audit, e)
+	return e, nil
+}
+
+func (f *fakeStore) ListAudit(_ context.Context, filter store.AuditFilter) ([]store.AuditEntry, int, error) {
+	if f.admin.auditErr != nil {
+		return nil, 0, f.admin.auditErr
+	}
+	out := []store.AuditEntry{}
+	for _, e := range f.admin.audit {
+		switch {
+		case filter.Actor != "" && e.ActorSubject != filter.Actor:
+		case filter.Subject != "" && e.Subject != filter.Subject:
+		case filter.Action != "" && e.Action != filter.Action:
+		case filter.Since != nil && e.At.Before(*filter.Since):
+		case filter.Until != nil && !e.At.Before(*filter.Until):
+		default:
+			out = append(out, e)
+		}
+	}
+	return out, len(out), nil
+}
+
 func (a *adminFake) ensure() {
 	if a.subscriptions == nil {
 		a.subscriptions = map[string]store.Subscription{}
@@ -412,6 +456,7 @@ func TestAdminRoutesRequireAdminRole(t *testing.T) {
 		{http.MethodGet, "/api/v1/admin/invoices/i1", ""},
 		{http.MethodPost, "/api/v1/admin/invoices/i1/pay", `{}`},
 		{http.MethodPost, "/api/v1/admin/invoices/i1/void", `{}`},
+		{http.MethodGet, "/api/v1/admin/audit", ""},
 	}
 
 	for _, rt := range routes {
