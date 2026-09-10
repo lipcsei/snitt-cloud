@@ -62,3 +62,7 @@ internetre.
   landing és az alkalmazás.
 - **A desktop kliens** titok nélküli, PKCE-vel – asztali alkalmazásba nem
   lehet titkot csomagolni.
+- **A Keycloak a Postgresbe ír**, saját adatbázisba. Ez nem apróság: a
+  `start-dev` alapból a konténerbe ágyazott H2-t használná, kötet nélkül –
+  minden újralétrehozáskor elveszne minden felhasználó és jelszó, és menteni
+  sem lenne mit.
