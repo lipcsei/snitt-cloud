@@ -30,10 +30,14 @@ A stackben előre be van importálva egy admin fiók:
 
 | Felhasználó | Jelszó | Szerep |
 | --- | --- | --- |
-| `snittadmin` | `admin` | `admin` realm szerep |
+| `snittadmin` | `snittadmin1234` | `admin` realm szerep |
 
-A `demo` / `password` fiókkal is be lehet lépni, de az nem admin: ilyenkor a felület a
+A `demo` / `demo12345678` fiókkal is be lehet lépni, de az nem admin: ilyenkor a felület a
 „Nincs jogosultságod” képernyőt mutatja, nem egy félig működő táblázatot.
+
+> A jelszavak azért ilyen hosszúak, mert a realm jelszóházirendje legalább 10 karaktert kér –
+> a rövidebbekkel az importálás el sem indulna. Éles környezetben ezeknek a fiókoknak nincs
+> helyük: lásd [`docs/FIOKOK-ELESITES.md`](../docs/FIOKOK-ELESITES.md).
 
 ### Ellenőrzések
 
