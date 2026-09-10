@@ -49,7 +49,7 @@ export const en: Strings = {
 
   hero: {
     pill: 'Desktop app · Windows · macOS · Linux',
-    title: 'You remember the line.\nYou just don’t remember *which film*.',
+    title: 'You know the line.\nJust not *which film*.',
     lead: 'Snitt transcribes your video library and finds the line you type — in a two-hour film, in about a second. Then it cuts that scene out for you.',
     download: 'Download',
     register: 'Sign up',

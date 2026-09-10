@@ -21,8 +21,12 @@ export default function HeadMeta() {
     document.title = title;
     setMeta('description', description);
 
-    // A korábbi oldal linkjeit mindig kitakarítjuk, mielőtt kiírnánk az újakat.
-    document.head.querySelectorAll('link[data-i18n]').forEach((node) => node.remove());
+    // Mindent kitakarítunk, mielőtt kiírnánk az újakat: a korábbi oldal futásidejű
+    // linkjeit és a build által beégetett statikus párjukat is - különben duplán
+    // szerepelne a canonical és a hreflang.
+    document.head
+      .querySelectorAll('link[data-i18n], link[rel="canonical"], link[rel="alternate"][hreflang]')
+      .forEach((node) => node.remove());
     addLink('alternate', absoluteUrl(PATHS.hu[routeKey]), hu.htmlLang);
     addLink('alternate', absoluteUrl(PATHS.en[routeKey]), en.htmlLang);
     // A nyelvsemleges belépési pont a magyar URL: onnan irányítunk tovább.

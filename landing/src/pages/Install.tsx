@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
@@ -119,7 +119,7 @@ function Guide({ os, strings }: { os: OsId; strings: Strings }) {
   return (
     <>
       {guide.steps.map((step, i) => (
-        <div key={step.title}>
+        <Fragment key={step.title}>
           <section className="install-step">
             <h3>{step.title}</h3>
             {step.body && (
@@ -136,7 +136,7 @@ function Guide({ os, strings }: { os: OsId; strings: Strings }) {
             {steps[i]?.[1] && <CodeBlock code={steps[i][1]} label={step.codeLabel2} />}
           </section>
           {warnAfter === i + 1 && <Warning warn={guide.warn} code={warn} />}
-        </div>
+        </Fragment>
       ))}
       {warnAfter === undefined && <Warning warn={guide.warn} code={warn} />}
     </>

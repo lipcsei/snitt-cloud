@@ -1,12 +1,17 @@
 # Snitt felhő oldali fejlesztői stack: Postgres + Keycloak + account szolgáltatás.
 # Indítás a repo gyökeréből:  docker compose -f deploy/docker-compose.yml up --build
 #
-# A landing (landing/ :5174) szándékosan nincs itt: Vite dev szerverrel, hot
-# reloaddal fut a hoston (`npm run dev`), élesben pedig GitHub Pagesre megy.
+# Minden rész saját konténerben fut, ahogy élesben is:
 #
-# Az admin felület VISZONT itt fut (:5175), mert élesben is így fog: konténer
-# a VPS-en, nginx mögött. Ha hot reload kell hozzá fejlesztés közben, állítsd
-# le ezt a szolgáltatást, és indítsd a hoston (`npm run dev`).
+#   postgres :5432   adatbázis
+#   keycloak :8081   azonosítás
+#   account  :8090   API (Go)
+#   admin    :5175   belső admin felület (nginx + SPA)
+#   landing  :8088   marketing oldal (nginx + SPA)
+#
+# A landing élesben GitHub Pagesre megy; ez a konténer a helyi
+# megtekintéshez van, és a VALÓDI production buildet szolgálja ki (a Vite dev
+# szerverrel szemben, ami a hoston `npm run dev`-vel indul).
 
 name: snitt
 
@@ -99,6 +104,21 @@ services:
       - "5175:80"
     depends_on:
       - account
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: ../landing
+      dockerfile: Dockerfile
+      args:
+        VITE_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-snitt}
+        VITE_KEYCLOAK_CLIENT_ID: ${LANDING_CLIENT_ID:-snitt-landing}
+        # A kanonikus URL-ek és a hreflang ebből épülnek - élesben
+        # https://snitt.video.
+        SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:8088}
+    ports:
+      - "8088:80"
     restart: unless-stopped
 volumes:
   postgres-data:
