@@ -1,16 +1,15 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthProvider';
+import { useNotYet } from '../NotYetProvider';
 import { fill, useI18n } from '../i18n';
 
 export default function Profile() {
-  const { ready, authenticated, profile, login, logout, accountUrl } = useAuth();
+  const { ready, authenticated, profile, logout, accountUrl } = useAuth();
   const { t, path } = useI18n();
+  const showNotYet = useNotYet();
 
-  // Védett oldal: amint kiderül, hogy nincs session, megyünk a bejelentkezésre.
-  useEffect(() => {
-    if (ready && !authenticated) login();
-  }, [ready, authenticated, login]);
+  // Amíg a fiókok nincsenek élesben, ez az oldal NEM irányít automatikusan a
+  // Keycloakra: az csak helyben létezik, a látogató kapcsolódási hibát kapna.
 
   if (!ready) {
     return (
@@ -29,7 +28,7 @@ export default function Profile() {
           <h1>{t.profile.needLoginTitle}</h1>
           <p className="muted">{t.profile.needLoginBody}</p>
           <div className="account-cta">
-            <button type="button" className="btn btn-primary" onClick={login}>
+            <button type="button" className="btn btn-primary" onClick={() => showNotYet('login')}>
               {t.profile.login}
             </button>
             <Link to={path('home')} className="btn btn-outline">
