@@ -21,6 +21,10 @@ export const initOptions: KeycloakInitOptions = {
   // A landinggel ellentétben itt nincs névtelen mód: az admin felületnek
   // minden oldala bejelentkezést igényel, ezért azonnal a Keycloakra megyünk.
   onLoad: 'login-required',
+  // A Keycloak alapból a böngésző nyelvét követi, a realm alapértelmezése
+  // csak akkor érvényesül, ha a böngésző nem kér mást - ezért kérjük
+  // kifejezetten a magyart.
+  locale: 'hu',
   pkceMethod: 'S256',
   silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
   checkLoginIframe: false,

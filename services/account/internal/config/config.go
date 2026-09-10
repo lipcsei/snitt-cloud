@@ -30,9 +30,9 @@ type Config struct {
 // Load beolvassa a konfigurációt a környezetből és validálja.
 func Load() (Config, error) {
 	c := Config{
-		HTTPAddr:         env("HTTP_ADDR", ":8090"),
-		DatabaseURL:      env("DATABASE_URL", "postgres://snitt:snitt@localhost:5432/snitt?sslmode=disable"),
-		KeycloakIssuer:   env("KEYCLOAK_ISSUER", "http://localhost:8081/realms/snitt"),
+		HTTPAddr:       env("HTTP_ADDR", ":8090"),
+		DatabaseURL:    env("DATABASE_URL", "postgres://snitt:snitt@localhost:5432/snitt?sslmode=disable"),
+		KeycloakIssuer: env("KEYCLOAK_ISSUER", "http://localhost:8081/realms/snitt"),
 		// Vesszővel elválasztva több elfogadott audience is megadható: a
 		// landing, az admin felület és később a desktop app is a saját
 		// client id-jével kap tokent ugyanehhez az API-hoz.

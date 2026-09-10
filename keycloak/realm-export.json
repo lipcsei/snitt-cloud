@@ -31,8 +31,12 @@
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://localhost:5174/*"],
-      "webOrigins": ["http://localhost:5174"],
+      "redirectUris": [
+        "http://localhost:5174/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5174"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5174/*"
@@ -62,7 +66,9 @@
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://127.0.0.1:53312/callback"],
+      "redirectUris": [
+        "http://127.0.0.1:53312/callback"
+      ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256"
@@ -92,8 +98,12 @@
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://localhost:5175/*"],
-      "webOrigins": ["http://localhost:5175"],
+      "redirectUris": [
+        "http://localhost:5175/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5175"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5175/*"
@@ -134,7 +144,10 @@
       "enabled": true,
       "serviceAccountClientId": "snitt-admin-api",
       "clientRoles": {
-        "realm-management": ["view-users", "query-users"]
+        "realm-management": [
+          "view-users",
+          "query-users"
+        ]
       }
     },
     {
@@ -144,7 +157,9 @@
       "email": "admin@snitt.local",
       "firstName": "Snitt",
       "lastName": "Admin",
-      "realmRoles": ["admin"],
+      "realmRoles": [
+        "admin"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -168,5 +183,11 @@
         }
       ]
     }
-  ]
+  ],
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "hu",
+    "en"
+  ],
+  "defaultLocale": "hu"
 }
