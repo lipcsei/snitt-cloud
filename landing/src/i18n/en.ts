@@ -52,7 +52,7 @@ export const en: Strings = {
   og: {
     imageSub: 'Desktop app: transcripts, search and scene cutting from your own videos.',
     imageAlt:
-      'Snitt share image: the words "Cut out your favourite scene." with the snitt.video address, on a dark background.',
+      'Snitt share image: the words “Cut out your favourite scene.” with the snitt.video address, on a dark background.',
   },
 
   hero: {

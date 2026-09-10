@@ -52,7 +52,7 @@ export const de: Strings = {
   og: {
     imageSub: 'Desktop-App: Transkripte, Suche und Szenenschnitt aus deinen eigenen Videos.',
     imageAlt:
-      'Snitt-Teilenbild: der Satz „Schneide deine Lieblingsszene aus." mit der Adresse snitt.video auf dunklem Hintergrund.',
+      'Snitt-Teilenbild: der Satz „Schneide deine Lieblingsszene aus.“ mit der Adresse snitt.video auf dunklem Hintergrund.',
   },
 
   hero: {
