@@ -49,6 +49,12 @@ export const hu: Strings = {
     langDeTitle: 'Deutsch',
   },
 
+  og: {
+    imageSub: 'Asztali alkalmazás: leirat, keresés és jelenetvágás a saját videóidból.',
+    imageAlt:
+      'Snitt megosztási kép: „Vágd ki a kedvenc jelenetedet." felirat a snitt.video címmel, sötét háttéren.',
+  },
+
   hero: {
     pill: 'Asztali alkalmazás · Windows · macOS · Linux',
     title: 'Vágd ki a\n*kedvenc jelenetedet*.',

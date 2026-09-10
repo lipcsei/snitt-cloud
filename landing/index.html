@@ -4,12 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>Snitt — Keresés a saját videótáradban, idézet alapján</title>
+    <meta name="theme-color" content="#0a0b0f" />
+
+    <!--
+      Ez a fejléc a fejlesztői szerveré és a build kiindulópontja. Az éles
+      oldalon útvonalanként a scripts/prerender-meta.mjs írja felül, mert a
+      közösségi botok (Facebook, LinkedIn, Slack) nem futtatnak JavaScriptet,
+      így a futásidőben beállított metaadatokat nem látnák.
+    -->
+    <title>Snitt — Vágd ki a kedvenc jelenetedet a saját videótáradból</title>
     <meta
       name="description"
-      content="A Snitt asztali alkalmazás átiratot készít a videóidról, megkeresi a beírt idézetet, és kivágja belőle a jelenetet. Minden helyben marad a gépeden."
+      content="A Snitt asztali alkalmazással kivágod a kedvenc jelenetedet a saját videóidból. És ha nem tudod, melyik filmben hangzik el a mondat, azt is megkeresi. Minden helyben marad a gépeden."
     />
+    <meta name="author" content="Snitt" />
+    <meta name="application-name" content="Snitt" />
+    <meta name="apple-mobile-web-app-title" content="Snitt" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Snitt" />
+    <meta property="og:locale" content="hu_HU" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:title" content="Snitt — Vágd ki a kedvenc jelenetedet a saját videótáradból" />
+    <meta
+      property="og:description"
+      content="A Snitt asztali alkalmazással kivágod a kedvenc jelenetedet a saját videóidból. És ha nem tudod, melyik filmben hangzik el a mondat, azt is megkeresi. Minden helyben marad a gépeden."
+    />
+    <meta property="og:url" content="https://snitt.video/" />
+    <meta property="og:image" content="https://snitt.video/og/snitt-hu.png" />
+    <meta property="og:image:secure_url" content="https://snitt.video/og/snitt-hu.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Snitt megosztási kép: „Vágd ki a kedvenc jelenetedet.” felirat a snitt.video címmel, sötét háttéren." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Snitt — Vágd ki a kedvenc jelenetedet a saját videótáradból" />
+    <meta
+      name="twitter:description"
+      content="A Snitt asztali alkalmazással kivágod a kedvenc jelenetedet a saját videóidból. És ha nem tudod, melyik filmben hangzik el a mondat, azt is megkeresi. Minden helyben marad a gépeden."
+    />
+    <meta name="twitter:image" content="https://snitt.video/og/snitt-hu.png" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
     <div id="root"></div>

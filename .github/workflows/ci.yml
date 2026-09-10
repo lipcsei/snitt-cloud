@@ -109,12 +109,17 @@ jobs:
           # Saját domain nélkül a Pages alkönyvtárban szolgál ki
           # (<user>.github.io/<repo>/), ilyenkor az assetek útvonala is oda kell
           # hogy mutasson - különben az oldal fehéren maradna.
+          # A SITE_URL-ből lesz minden abszolút URL a fejlécben (og:url,
+          # og:image, canonical, sitemap) - a Facebook relatív képet nem fogad
+          # el, ezért ennek pontosnak kell lennie mindkét kiszolgálási módban.
           if [ -n "${{ vars.PAGES_CNAME }}" ]; then
             export VITE_BASE=/
+            export SITE_URL="https://${{ vars.PAGES_CNAME }}"
           else
             export VITE_BASE="/${GITHUB_REPOSITORY#*/}/"
+            export SITE_URL="https://${GITHUB_REPOSITORY%%/*}.github.io"
           fi
-          echo "VITE_BASE=$VITE_BASE"
+          echo "VITE_BASE=$VITE_BASE SITE_URL=$SITE_URL"
           npm ci
           npm run build
           # Egyoldalas alkalmazás: a 404-re ugyanaz a dokumentum kell, különben

@@ -112,6 +112,14 @@ export type Strings = {
     langDeTitle: string;
   };
 
+  /** A közösségi megosztáshoz tartozó szövegek (Open Graph / Twitter kártya). */
+  og: {
+    /** Az előnézetkép alsó sora - egy mondatban, mit ad az app. */
+    imageSub: string;
+    /** Az előnézetkép alt szövege képernyőolvasóknak és kép nélküli kliensnek. */
+    imageAlt: string;
+  };
+
   hero: {
     pill: string;
     title: string;

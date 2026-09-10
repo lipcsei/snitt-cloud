@@ -9,13 +9,38 @@
 // A szövegek forrása ugyanaz a szótár, amit az alkalmazás használ (esbuilddel
 // töltjük be a TypeScriptet), így nem tud eltérni a kettő.
 
-import { build } from 'esbuild';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { loadStrings } from './load-strings.mjs';
 
 const DIST = 'dist';
-const SITE_URL = process.env.SITE_URL || 'https://snitt.video';
+
+/** Az oldal nyilvános origója - ebből lesz minden abszolút URL (og:url, og:image). */
+const SITE_URL = (process.env.SITE_URL || 'https://snitt.video').replace(/\/$/, '');
+
+/**
+ * Az alapútvonal, ahogy a Vite is kapja: saját domainnél "/", GitHub Pages
+ * alkönyvtárnál "/<repo>/". Enélkül a megosztási kép URL-je 404 lenne.
+ */
+const BASE = `/${(process.env.VITE_BASE || '/').replace(/^\/|\/$/g, '')}/`.replace('//', '/');
+
+/** Ha egyszer lesz Facebook-alkalmazás, elég a repository variable-t kitölteni. */
+const FB_APP_ID = process.env.FB_APP_ID || '';
+/** Az X/Twitter fiók, ha lesz - pl. "@snittvideo". */
+const TWITTER_SITE = process.env.TWITTER_SITE || '';
+
+const THEME_COLOR = '#0a0b0f';
+
+/** Egy oldalon belüli útvonalból teljes, abszolút URL. */
+function absUrl(path) {
+  const prefix = SITE_URL + BASE.replace(/\/$/, '');
+  return path === '/' ? `${prefix}/` : prefix + path;
+}
+
+/** A public/ alatti fájlokból teljes, abszolút URL (a közösségi botok relatívat nem fogadnak el). */
+function assetUrl(name) {
+  return SITE_URL + BASE + name;
+}
 
 /** A nyelvek, ahogy az alkalmazásban is: a magyar a nyelvsemleges alap. */
 const LANGS = ['hu', 'en', 'de'];
@@ -30,61 +55,91 @@ const ROUTES = [
   { key: 'install', hu: '/telepites', en: '/en/install', de: '/de/installation' },
 ];
 
-async function loadStrings() {
-  const outfile = join('node_modules', '.cache', 'snitt-i18n.mjs');
-  await mkdir(dirname(outfile), { recursive: true });
-  await build({
-    entryPoints: ['src/i18n/hu.ts', 'src/i18n/en.ts', 'src/i18n/de.ts'],
-    bundle: true,
-    format: 'esm',
-    platform: 'node',
-    outfile,
-    logLevel: 'silent',
-    // Egy fájlba fűzzük a kettőt, hogy egyetlen importtal elérhető legyen.
-    stdin: undefined,
-  }).catch(async () => {
-    // Több belépési pont egy outfile-ba nem megy: ilyenkor egy köztes modult
-    // fordítunk, ami mindkettőt újraexportálja.
-    const shim = join('node_modules', '.cache', 'snitt-i18n-entry.ts');
-    const reexports = LANGS.map(
-      (lang) =>
-        `export { ${lang} } from '${pathToFileURL(join(process.cwd(), `src/i18n/${lang}.ts`)).pathname}';`,
-    ).join('\n');
-    await writeFile(shim, `${reexports}\n`);
-    await build({ entryPoints: [shim], bundle: true, format: 'esm', platform: 'node', outfile, logLevel: 'silent' });
-    await rm(shim, { force: true });
-  });
-  return import(pathToFileURL(join(process.cwd(), outfile)).href);
-}
-
-function head({ lang, ogLocale, title, description, canonical, urls }) {
+function head({ lang, code, ogLocale, title, description, canonical, urls, imageAlt }) {
+  const image = assetUrl(`og/snitt-${code}.png`);
   return `<html lang="${lang}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="${THEME_COLOR}" />
     <title>${esc(title)}</title>
     <meta name="description" content="${esc(description)}" />
+    <meta name="author" content="Snitt" />
+    <meta name="application-name" content="Snitt" />
+    <meta name="apple-mobile-web-app-title" content="Snitt" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Open Graph: ezt olvassa a Facebook, a Messenger, a LinkedIn és a Slack is. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Snitt" />
     <meta property="og:locale" content="${ogLocale}" />
+${LANGS.filter((other) => other !== code)
+  .map((other) => `    <meta property="og:locale:alternate" content="${OG_LOCALE[other]}" />`)
+  .join('\n')}
     <meta property="og:title" content="${esc(title)}" />
     <meta property="og:description" content="${esc(description)}" />
     <meta property="og:url" content="${canonical}" />
+    <meta property="og:image" content="${image}" />
+    <meta property="og:image:secure_url" content="${image}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${esc(imageAlt)}" />
+${FB_APP_ID ? `    <meta property="fb:app_id" content="${FB_APP_ID}" />\n` : ''}
+    <!-- X/Twitter kártya: külön névtér, de ugyanaz a kép és szöveg. -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${esc(title)}" />
+${TWITTER_SITE ? `    <meta name="twitter:site" content="${TWITTER_SITE}" />\n    <meta name="twitter:creator" content="${TWITTER_SITE}" />\n` : ''}    <meta name="twitter:title" content="${esc(title)}" />
     <meta name="twitter:description" content="${esc(description)}" />
+    <meta name="twitter:image" content="${image}" />
+    <meta name="twitter:image:alt" content="${esc(imageAlt)}" />
+
     <link rel="canonical" href="${canonical}" />
-${LANGS.map((code) => `    <link rel="alternate" hreflang="${code}" href="${urls[code]}" />`).join('\n')}
+${LANGS.map((other) => `    <link rel="alternate" hreflang="${TABLE_LANG[other]}" href="${urls[other]}" />`).join('\n')}
     <link rel="alternate" hreflang="x-default" href="${urls[DEFAULT_LANG]}" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />`;
+    <link rel="icon" type="image/svg+xml" href="${BASE}favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="${BASE}favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="${BASE}apple-touch-icon.png" />
+    <link rel="manifest" href="${BASE}site.webmanifest" />
+    <script type="application/ld+json">${jsonLd({ title, description, canonical, image })}</script>`;
+}
+
+/**
+ * Strukturált adat a keresőknek: maga az oldal és a letölthető alkalmazás.
+ * A Facebooknak nem kell, a Google gazdag találatához viszont igen.
+ */
+function jsonLd({ title, description, canonical, image }) {
+  return JSON.stringify([
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Snitt',
+      url: absUrl('/'),
+      inLanguage: LANGS.map((code) => TABLE_LANG[code]),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Snitt',
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Windows, macOS, Linux',
+      url: canonical,
+      image,
+      description,
+      headline: title,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    },
+  ]);
 }
 
 function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const tables = await loadStrings();
+const tables = await loadStrings(LANGS);
+
+/** A `htmlLang` értékek nyelvkódonként - a hreflang és a JSON-LD is ezt használja. */
+const TABLE_LANG = Object.fromEntries(LANGS.map((code) => [code, tables[code].htmlLang]));
 const template = await readFile(join(DIST, 'index.html'), 'utf8');
 
 // A Vite által generált fejlécből csak a <script>/<link rel=stylesheet>
@@ -95,7 +150,7 @@ const assetTags = [...template.matchAll(/<(script|link)[^>]*>(<\/script>)?/g)]
   .join('\n    ');
 
 for (const route of ROUTES) {
-  const urls = Object.fromEntries(LANGS.map((code) => [code, SITE_URL + route[code]]));
+  const urls = Object.fromEntries(LANGS.map((code) => [code, absUrl(route[code])]));
 
   for (const lang of LANGS) {
     const strings = tables[lang];
@@ -104,11 +159,13 @@ for (const route of ROUTES) {
     const html = `<!doctype html>
 ${head({
       lang: strings.htmlLang,
+      code: lang,
       ogLocale: OG_LOCALE[lang],
       title,
       description,
       canonical,
       urls,
+      imageAlt: strings.og.imageAlt,
     })}
     ${assetTags}
   </head>
@@ -128,3 +185,28 @@ ${head({
 // kliensoldalon dönti el, hova tartozik.
 await writeFile(join(DIST, '404.html'), await readFile(join(DIST, 'index.html'), 'utf8'));
 console.log('prerender: 404.html');
+
+// Sitemap az indexelhető útvonalakról, a nyelvi párokkal együtt - a kereső így
+// nem külön oldalnak látja a három fordítást, hanem egymás változatainak.
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${ROUTES.flatMap((route) => {
+  const urls = Object.fromEntries(LANGS.map((code) => [code, absUrl(route[code])]));
+  const alternates = [
+    ...LANGS.map((code) => `    <xhtml:link rel="alternate" hreflang="${TABLE_LANG[code]}" href="${urls[code]}"/>`),
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${urls[DEFAULT_LANG]}"/>`,
+  ].join('\n');
+  return LANGS.map(
+    (code) => `  <url>\n    <loc>${urls[code]}</loc>\n${alternates}\n  </url>`,
+  );
+}).join('\n')}
+</urlset>
+`;
+await writeFile(join(DIST, 'sitemap.xml'), sitemap);
+console.log('prerender: sitemap.xml');
+
+await writeFile(
+  join(DIST, 'robots.txt'),
+  `User-agent: *\nAllow: /\n\nSitemap: ${assetUrl('sitemap.xml')}\n`,
+);
+console.log('prerender: robots.txt');
