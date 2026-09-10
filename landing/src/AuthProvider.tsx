@@ -12,6 +12,7 @@ import { useLocation } from 'react-router-dom';
 import {
   AUTH_INIT_TIMEOUT_MS,
   accountConsoleUrl,
+  authConfigured,
   initOptions,
   keycloak,
   readProfile,
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthState | null>(null);
  * hívás dob. A marketing oldal ettől nem eshet szét, ezért mind el van kapva.
  */
 function safely(fn: () => Promise<unknown> | void) {
+  if (!authConfigured) return;
   try {
     Promise.resolve(fn()).catch((err) => console.warn('Keycloak nem érhető el', err));
   } catch (err) {
@@ -55,6 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+
+    // Keycloak nélküli build (a fiókok még nincsenek élesben): meg sem
+    // próbáljuk - az adapter üres realmmel a saját domainünkre lőne.
+    if (!authConfigured) {
+      setReady(true);
+      return;
+    }
 
     const finish = (ok: boolean) => {
       setAuthenticated(ok);
