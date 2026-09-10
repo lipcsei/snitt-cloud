@@ -1,0 +1,132 @@
+/* Snitt Keycloak login téma - sötét háttér (#0a0b0f), kék akcent (#4f86ff).
+   A keycloak.v2 alapértelmezett témára épül (PatternFly 5), ezért a szelektorok
+   szándékosan szélesek/redundánsak: így a pontos DOM-struktúra változásaitól
+   függetlenül is érvényesülnek. */
+
+:root, body, #kc-container, .pf-v5-c-login {
+  --pf-v5-global--BackgroundColor--100: #0a0b0f !important;
+  --pf-v5-global--BackgroundColor--dark-100: #0a0b0f !important;
+  --pf-v5-global--Color--100: #eceef2 !important;
+  --pf-v5-global--Color--200: #9a9da5 !important;
+  --pf-v5-global--primary-color--100: #4f86ff !important;
+  --pf-v5-global--primary-color--200: #7aa4ff !important;
+  --pf-v5-global--link--Color: #7aa4ff !important;
+  --pf-v5-global--link--Color--hover: #4f86ff !important;
+  --pf-v5-global--BorderColor--100: #262a33 !important;
+  --pf-v5-global--BorderColor--light-100: #262a33 !important;
+}
+
+html, body {
+  background: radial-gradient(1200px 600px at 50% -10%, rgba(79, 134, 255, .18), transparent 60%),
+              #0a0b0f !important;
+  color: #eceef2 !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.pf-v5-c-login__main,
+.pf-v5-c-login__main-body,
+#kc-content,
+#kc-content-wrapper {
+  color: #eceef2;
+}
+
+/* Bejelentkező/regisztrációs kártya */
+.pf-v5-c-login__main-body,
+.card-pf,
+#kc-form-wrapper,
+.pf-v5-c-card {
+  background: #14161d !important;
+  border: 1px solid #262a33 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5) !important;
+}
+
+/* Márkás fejléc panel */
+.pf-v5-c-login__header {
+  color: #eceef2 !important;
+  background: radial-gradient(1200px 600px at 30% -10%, rgba(79, 134, 255, .22), transparent 60%),
+              #0a0b0f !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center;
+  justify-content: center;
+  padding: 48px !important;
+}
+.pf-v5-c-login__header::before {
+  content: "▶";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4f86ff, #7aa4ff);
+  color: #fff;
+  font-size: 1.4rem;
+  padding-left: 4px;
+}
+.pf-v5-c-login__header .pf-v5-c-brand,
+#kc-header-wrapper {
+  font-weight: 800 !important;
+  letter-spacing: -.02em !important;
+  font-size: 1.8rem !important;
+  text-transform: none !important;
+  text-align: center;
+}
+
+/* Beviteli mezők */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+.pf-v5-c-form-control {
+  background: #1c1f28 !important;
+  border: 1px solid #262a33 !important;
+  color: #eceef2 !important;
+  border-radius: 8px !important;
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+.pf-v5-c-form-control:focus {
+  border-color: #4f86ff !important;
+  box-shadow: 0 0 0 1px #4f86ff !important;
+}
+label, .pf-v5-c-form__label-text {
+  color: #eceef2 !important;
+  font-weight: 700 !important;
+  font-size: .85rem !important;
+}
+
+/* Elsődleges gomb (Sign In / Register) */
+#kc-login,
+#kc-register,
+.pf-v5-c-button.pf-m-primary,
+input[type="submit"],
+button[type="submit"] {
+  background: linear-gradient(135deg, #4f86ff, #7aa4ff) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+}
+#kc-login:hover,
+#kc-register:hover,
+.pf-v5-c-button.pf-m-primary:hover,
+button[type="submit"]:hover {
+  filter: brightness(1.08);
+}
+
+/* Linkek (regisztráció, elfelejtett jelszó) */
+a, .pf-v5-c-login__main-footer-links a {
+  color: #7aa4ff !important;
+}
+a:hover {
+  color: #4f86ff !important;
+}
+
+/* Hibaüzenetek maradjanak jól olvashatók a sötét háttéren */
+.pf-v5-c-alert.pf-m-danger, .alert-error, #input-error {
+  color: #f85149 !important;
+}

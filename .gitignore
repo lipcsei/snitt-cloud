@@ -1,0 +1,13 @@
+# Függőségek és build kimenetek
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Helyi beállítások (a Keycloak/Sentry adatok nem valók a repóba)
+.env
+.env.*.local
+.env.local
+
+# IDE / OS
+.idea/
+.DS_Store

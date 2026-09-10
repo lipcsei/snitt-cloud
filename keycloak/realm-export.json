@@ -1,0 +1,172 @@
+{
+  "realm": "snitt",
+  "displayName": "Snitt",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "verifyEmail": false,
+  "accessTokenLifespan": 900,
+  "loginTheme": "snitt",
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Belső admin felület (admin/) teljes hozzáférés: felhasználók, előfizetések, számlázás.",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "snitt-landing",
+      "name": "Snitt landing (React)",
+      "description": "A marketing oldal publikus kliense: regisztráció és profilkezelés böngészőből, Authorization Code + PKCE folyamattal.",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:5174/*"],
+      "webOrigins": ["http://localhost:5174"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5174/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-self",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "snitt-landing",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "snitt-desktop",
+      "name": "Snitt desktop (későbbi bejelentkezés)",
+      "description": "A desktop app opcionális bejelentkezéséhez, loopback redirecttel. Egyelőre nincs használatban.",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://127.0.0.1:53312/callback"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-landing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "snitt-landing",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "snitt-admin",
+      "name": "Snitt admin (React)",
+      "description": "A belső admin felület publikus kliense (PKCE). Jogosultságot nem ez ad: a hozzáférést az 'admin' realm szerep dönti el, amit az account szolgáltatás ellenőriz.",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:5175/*"],
+      "webOrigins": ["http://localhost:5175"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5175/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-landing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "snitt-landing",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "snitt-admin-api",
+      "name": "Snitt admin API (service account)",
+      "description": "Bizalmas kliens, amivel az account szolgáltatás a Keycloak Admin REST API-ról olvassa a felhasználókat. Böngészőből nem használható: nincs standard flow, csak service account.",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "secret": "snitt-admin-api-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-snitt-admin-api",
+      "enabled": true,
+      "serviceAccountClientId": "snitt-admin-api",
+      "clientRoles": {
+        "realm-management": ["view-users", "query-users"]
+      }
+    },
+    {
+      "username": "snittadmin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@snitt.local",
+      "firstName": "Snitt",
+      "lastName": "Admin",
+      "realmRoles": ["admin"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "demo@example.com",
+      "firstName": "Demo",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+name: CI
+
+# A repó három, egymástól függetlenül épülő része: a Go account service, a
+# landing oldal és az admin felület. Mindegyik külön jobban fut, hogy egy
+# frontend hiba ne rejtse el a backendét (és fordítva).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  account-service:
+    name: Account service (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/account
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/account/go.mod
+          cache-dependency-path: services/account/go.sum
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test -count=1 ./...
+      - name: gofmt ellenőrzés
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Nem gofmt-elt fájlok:"; echo "$unformatted"; exit 1
+          fi
+
+  landing:
+    name: Landing
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: landing-dist
+          path: landing/dist
+          if-no-files-found: error
+
+  admin:
+    name: Admin felület
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+  # A landing oldal a snitt.video-t szolgálja ki GitHub Pagesről. Csak a main
+  # ágról megy ki, és csak akkor, ha a build zöld.
+  deploy-landing:
+    name: Landing deploy (GitHub Pages)
+    needs: landing
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - name: Build a Pages-hez
+        working-directory: landing
+        env:
+          # A Keycloak címe és kliense éles környezetben - repository
+          # variable-ként állítható, hogy ne kelljen kódot módosítani hozzá.
+          VITE_KEYCLOAK_URL: ${{ vars.KEYCLOAK_URL }}
+          VITE_KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM }}
+          VITE_KEYCLOAK_CLIENT_ID: ${{ vars.KEYCLOAK_CLIENT_ID }}
+        run: |
+          npm ci
+          npm run build
+          # Egyoldalas alkalmazás: a 404-re ugyanaz a dokumentum kell, különben
+          # a /telepites és a /profil útvonal újratöltésnél 404-et adna.
+          cp dist/index.html dist/404.html
+          # Saját domain (snitt.video) - enélkül a Pages a *.github.io címre esne vissza.
+          echo "snitt.video" > dist/CNAME
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: landing/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

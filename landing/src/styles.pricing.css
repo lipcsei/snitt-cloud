@@ -1,0 +1,154 @@
+/* Árazás - két csomag, szándékosan egyszerű összehasonlítás. */
+
+.pricing {
+  padding: 88px 20px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+.pricing-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+
+.pricing h2 {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+.pricing-lead {
+  margin: 0 auto 44px;
+  max-width: 620px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.pricing-tiers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.tier {
+  position: relative;
+  padding: 26px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tier-pro {
+  border-color: rgba(79, 134, 255, 0.45);
+  background:
+    radial-gradient(600px 240px at 50% -30%, rgba(79, 134, 255, 0.16), transparent 70%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.tier-flag {
+  position: absolute;
+  top: -11px;
+  left: 26px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-grad);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tier header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tier h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.tier-price {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tier-price span {
+  color: var(--faint);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.tier ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.tier li::marker {
+  color: var(--accent);
+}
+
+.tier li strong {
+  color: var(--text);
+}
+
+.tier-note {
+  margin: auto 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--faint);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.tier-cta {
+  align-self: flex-start;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent-grad);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tier-cta:hover {
+  filter: brightness(1.08);
+}
+
+.pricing-footnote {
+  margin: 32px auto 0;
+  max-width: 640px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 760px) {
+  .pricing {
+    padding: 64px 16px;
+  }
+  .pricing-tiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,93 @@
+/* A "minden helyben marad" szakasz - szándékosan a többinél hangsúlyosabb,
+   mert ez a termék legfontosabb ígérete. */
+
+.privacy {
+  position: relative;
+  padding: 96px 20px;
+  background:
+    radial-gradient(1000px 420px at 50% -10%, rgba(79, 134, 255, 0.16), transparent 70%),
+    var(--bg-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.privacy-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.privacy-eyebrow {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.privacy h2 {
+  margin: 0 0 20px;
+  font-size: clamp(1.9rem, 4.4vw, 2.9rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+.privacy-accent {
+  background: linear-gradient(120deg, var(--accent) 10%, var(--pink) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.privacy-lead {
+  margin: 0 auto 44px;
+  max-width: 640px;
+  color: var(--muted);
+  font-size: 1.06rem;
+  line-height: 1.65;
+}
+
+.privacy-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 32px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.privacy-points li {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.privacy-point-title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.privacy-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .privacy {
+    padding: 64px 16px;
+  }
+  .privacy-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

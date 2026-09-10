@@ -1,0 +1,81 @@
+# Snitt felhő oldali fejlesztői stack: Postgres + Keycloak + account szolgáltatás.
+# Indítás a repo gyökeréből:  docker compose -f deploy/docker-compose.yml up --build
+#
+# A két React app (landing/ :5174, admin/ :5175) szándékosan nincs itt: Vite dev
+# szerverrel, hot reloaddal futnak a hoston (`npm run dev`). A stack csak azt
+# adja, ami nélkül nem indulnak - adatbázist, identitást és az API-t.
+
+name: snitt
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-snitt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snitt}
+      POSTGRES_DB: ${POSTGRES_DB:-snitt}
+    ports:
+      # Fejlesztői kényelem: psql/DB kliens a hostról is elérje.
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-snitt} -d ${POSTGRES_DB:-snitt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: "8081"
+      # Az issuer URL-nek meg kell egyeznie azzal, amit a böngésző és az account
+      # szolgáltatás is lát, különben a token issuer ellenőrzése elbukik.
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ../keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ../keycloak/themes/snitt:/opt/keycloak/themes/snitt:ro
+
+  account:
+    build:
+      context: ../services/account
+      dockerfile: Dockerfile
+    environment:
+      HTTP_ADDR: ":8090"
+      DATABASE_URL: postgres://${POSTGRES_USER:-snitt}:${POSTGRES_PASSWORD:-snitt}@postgres:5432/${POSTGRES_DB:-snitt}?sslmode=disable
+      # A tokenek issuer claimje az, amit a böngésző lát (localhost:8081), a
+      # discovery viszont a compose-hálózaton belülről, a "keycloak" hoszton
+      # történik - ezért a két URL szándékosan eltér.
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/snitt}
+      KEYCLOAK_DISCOVERY_URL: http://keycloak:8081/realms/snitt
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-snitt-landing}
+      # A landing (5174) és az admin felület (5175) is innen hívja az API-t.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5174,http://localhost:5175}
+      # A Keycloak Admin REST API a compose-hálózaton belülről érhető el; a
+      # service account innen olvassa a felhasználókat az admin felülethez.
+      KEYCLOAK_BASE_URL: http://keycloak:8081
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-snitt}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-snitt-admin-api}
+      # Fejlesztői titok, a realm-export.json-ben ugyanez szerepel.
+      # Éles környezetben felülírandó.
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-snitt-admin-api-dev-secret}
+      ADMIN_ROLE: ${ADMIN_ROLE:-admin}
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-HUF}
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+volumes:
+  postgres-data:

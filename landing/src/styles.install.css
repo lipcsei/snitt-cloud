@@ -1,0 +1,338 @@
+/* A telepítési útmutató oldal. Kézikönyv, nem landing: sűrűbb szedés, kevesebb
+   dekoráció, a hangsúly a másolható parancsokon van. */
+
+.install-page {
+  padding-bottom: clamp(64px, 8vw, 110px);
+}
+
+.install-lead {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 1.04rem;
+  max-width: 62ch;
+}
+
+/* ---------- „mennyi kell ebből” doboz ---------- */
+
+.install-callout {
+  margin-top: 30px;
+  padding: 22px 24px;
+  border: 1px solid rgba(79, 134, 255, 0.28);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(79, 134, 255, 0.1), rgba(79, 134, 255, 0.03));
+}
+
+.install-callout h2 {
+  margin-bottom: 10px;
+  font-size: 1.12rem;
+  font-weight: 660;
+}
+
+.install-callout p {
+  color: var(--muted);
+  font-size: 0.96rem;
+}
+
+/* ---------- a három eszköz ---------- */
+
+.dep-list {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dep {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.dep-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.dep-head code {
+  font-size: 0.95rem;
+}
+
+.dep-tag {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--faint);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dep-tag-req {
+  border-color: rgba(255, 92, 138, 0.34);
+  color: #ffa8bf;
+}
+
+.dep p {
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+/* ---------- rendszerválasztó ---------- */
+
+.os-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 40px 0 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.os-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 560;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.os-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.os-tab-on,
+.os-tab-on:hover {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(47, 109, 246, 0.26);
+}
+
+.os-panel {
+  margin-top: 18px;
+}
+
+/* A panel fókuszálható (a tabról nyíllal érkezve), de a keret itt zavaró lenne. */
+.os-panel:focus {
+  outline: none;
+}
+
+/* ---------- lépések ---------- */
+
+.install-step {
+  margin-top: 30px;
+  min-width: 0;
+}
+
+.install-step h2 {
+  margin-bottom: 10px;
+  font-size: 1.32rem;
+  font-weight: 660;
+}
+
+.install-step h3 {
+  margin-bottom: 10px;
+  font-size: 1.08rem;
+}
+
+.install-step > p {
+  color: var(--muted);
+  font-size: 0.96rem;
+}
+
+.install-hint {
+  margin-top: 12px !important;
+  color: var(--faint) !important;
+  font-size: 0.89rem !important;
+}
+
+/* ---------- figyelmeztető dobozok ---------- */
+
+.install-warn {
+  margin-top: 26px;
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 92, 138, 0.24);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 92, 138, 0.07), rgba(255, 92, 138, 0.02));
+  min-width: 0;
+}
+
+.install-warn h3 {
+  margin-bottom: 10px;
+  font-size: 1.04rem;
+}
+
+.install-warn p {
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.install-warn p + p {
+  margin-top: 12px;
+}
+
+/* ---------- kódblokk ---------- */
+
+.code-block {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.34);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.code-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--faint);
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.code-copy {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.code-copy:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
+}
+
+/* A hosszú parancsok (pl. a yt-dlp letöltő URL-je) itt gördülnek, nem az oldal. */
+.code-block pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.75;
+  color: #cfe0ff;
+}
+
+.code-block pre code {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+/* ---------- környezeti változók ---------- */
+
+.env-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.env-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.env-list span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* ---------- jó tudni ---------- */
+
+.know-list {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.know-list li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.know-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.know-list strong {
+  color: var(--text);
+  font-weight: 620;
+}
+
+/* ---------- letöltés szekció linkje ---------- */
+
+.notice-cta {
+  margin-top: 18px;
+}
+
+@media (max-width: 560px) {
+  .install-callout,
+  .install-warn,
+  .dep {
+    padding: 18px;
+  }
+
+  .os-tab {
+    padding: 9px 4px;
+    font-size: 0.88rem;
+  }
+
+  .code-block pre {
+    font-size: 0.8rem;
+  }
+}
