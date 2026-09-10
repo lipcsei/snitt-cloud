@@ -10,7 +10,7 @@ if (!container) throw new Error('Hiányzik a #root elem');
 
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <App />
       </AuthProvider>

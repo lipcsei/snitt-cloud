@@ -106,6 +106,15 @@ jobs:
           VITE_KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM }}
           VITE_KEYCLOAK_CLIENT_ID: ${{ vars.KEYCLOAK_CLIENT_ID }}
         run: |
+          # Saját domain nélkül a Pages alkönyvtárban szolgál ki
+          # (<user>.github.io/<repo>/), ilyenkor az assetek útvonala is oda kell
+          # hogy mutasson - különben az oldal fehéren maradna.
+          if [ -n "${{ vars.PAGES_CNAME }}" ]; then
+            export VITE_BASE=/
+          else
+            export VITE_BASE="/${GITHUB_REPOSITORY#*/}/"
+          fi
+          echo "VITE_BASE=$VITE_BASE"
           npm ci
           npm run build
           # Egyoldalas alkalmazás: a 404-re ugyanaz a dokumentum kell, különben
