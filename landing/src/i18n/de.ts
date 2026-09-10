@@ -52,7 +52,8 @@ export const de: Strings = {
   hero: {
     pill: 'Desktop-App · Windows · macOS · Linux',
     title: 'Du kennst den Satz.\nNur nicht, *aus welchem Film*.',
-    lead: 'Oder du weißt es genau und willst einfach deine Lieblingsszene als Datei. Snitt erstellt Transkripte deiner Videosammlung, findet darin den Satz, den du eintippst — in einem Zweistundenfilm in etwa einer Sekunde — und schneidet dir genau diesen Moment heraus.',
+    cutLine: 'Oder du weißt es genau — und willst einfach **deine Lieblingsszene ausschneiden**.',
+    lead: 'Snitt erstellt Transkripte deiner Videosammlung, findet darin den Satz, den du eintippst — in einem Zweistundenfilm in etwa einer Sekunde — und du ziehst die Leiste auf den genauen Anfang und das Ende der Szene. Heraus kommt eine fertige Videodatei auf deinem eigenen Rechner.',
     download: 'Herunterladen',
     register: 'Registrieren',
     facts: [

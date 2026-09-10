@@ -22,6 +22,10 @@ export default function Hero() {
             <Rich text={t.hero.title} />
           </h1>
 
+          <p className="hero-cut">
+            <Rich text={t.hero.cutLine} />
+          </p>
+
           <p className="lead">{t.hero.lead}</p>
 
           <div className="hero-cta">

@@ -115,6 +115,8 @@ export type Strings = {
   hero: {
     pill: string;
     title: string;
+    /** A cím alatti kiemelt mondat: a kedvenc jelenet kivágása. */
+    cutLine: string;
     lead: string;
     download: string;
     register: string;
