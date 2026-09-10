@@ -67,7 +67,8 @@
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://127.0.0.1:53312/callback"
+        "http://127.0.0.1:*",
+        "http://localhost:*"
       ],
       "webOrigins": [],
       "attributes": {
