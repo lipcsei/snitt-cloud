@@ -12,7 +12,7 @@ export const hu: Strings = {
     install: {
       title: 'Telepítés — Snitt',
       description:
-        'Az ffmpeg, a yt-dlp és a faster-whisper telepítése Windowson, macOS-en és Linuxon, lépésről lépésre.',
+        'Az ffmpeg, a yt-dlp és a whisper telepítése Windowson, macOS-en és Linuxon, lépésről lépésre.',
     },
     profile: {
       title: 'Profil — Snitt',
@@ -297,7 +297,7 @@ export const hu: Strings = {
       items: [
         '`ffmpeg` — a videók vágásához és a hangsáv kinyeréséhez.',
         '`yt-dlp` — ha linkről szeretnél videót behozni.',
-        '`faster-whisper` — ha beszédfelismeréssel is szeretnél átiratot készíteni.',
+        '`whisper.cpp` — ha beszédfelismeréssel is szeretnél átiratot készíteni.',
       ],
       foot: 'Ha csak meglévő feliratokban keresel a saját fájljaid között, elég az `ffmpeg`. A többi akkor kell, amikor tényleg használod őket.',
       cta: 'Telepítési útmutató rendszerenként →',
@@ -351,7 +351,7 @@ export const hu: Strings = {
       {
         q: 'Akkor is működik, ha egyáltalán nincs feliratom?',
         a: [
-          'Igen, ilyenkor jön a Whisper. A beszédfelismerés a videó hangsávjából készít átiratot, tehát pont azt kapod, ami elhangzik — nem a fordító megoldását. Ehhez a `faster-whisper` telepítése szükséges, és a hosszabb filmeknél ez a lépés időbe telik; utána viszont a keresés már azonnali.',
+          'Igen, ilyenkor jön a Whisper. A beszédfelismerés a videó hangsávjából készít átiratot, tehát pont azt kapod, ami elhangzik — nem a fordító megoldását. Ehhez a `whisper.cpp` telepítése szükséges, és a hosszabb filmeknél ez a lépés időbe telik; utána viszont a keresés már azonnali.',
           'A telepítése rendszerenként pár parancs: végigvezet rajta a [telepítési útmutató](/telepites).',
         ],
       },
@@ -418,8 +418,8 @@ export const hu: Strings = {
         body: 'Csak akkor, ha linkről szeretnél videót behozni a tárba.',
       },
       {
-        name: 'faster-whisper',
-        body: 'Csak akkor, ha beszédfelismeréssel is szeretnél átiratot készíteni. A parancsot a `faster-whisper-cli` Python-csomag telepíti.',
+        name: 'whisper.cpp',
+        body: 'Csak akkor, ha beszédfelismeréssel is szeretnél átiratot készíteni. Egyetlen program, `whisper-cli` néven — Python nem kell hozzá. A modellt a Snitt tölti le az első használatkor.',
       },
     ],
     tabsAria: 'Operációs rendszer',
@@ -438,14 +438,14 @@ export const hu: Strings = {
         },
         {
           title: '2. Beszédfelismerés (opcionális)',
-          body: 'Ez a rész csak akkor kell, ha felirat nélküli videókhoz is szeretnél átiratot. Először Python kell hozzá, utána maga a csomag.',
+          body: 'Ez a rész csak akkor kell, ha felirat nélküli videókhoz is szeretnél átiratot. Egyetlen program, Python nélkül.',
           codeLabel: 'PowerShell',
-          hint: 'A Python telepítése után **nyiss egy új PowerShell ablakot**, különben a `pip` parancsot még nem találja meg a rendszer.',
+          hint: 'Telepítés után **nyiss egy új PowerShell ablakot**, különben a `whisper-cli` parancsot még nem találja meg a rendszer.',
           codeLabel2: 'Új PowerShell ablak',
         },
         {
           title: 'Alternatíva: Chocolatey',
-          body: 'Ha Chocolateyt használsz, egy sorral is megvan az `ffmpeg`, a `yt-dlp` és a Python:',
+          body: 'Ha Chocolateyt használsz, egy sorral is megvan az `ffmpeg` és a `yt-dlp`:',
           codeLabel: 'PowerShell (rendszergazda)',
         },
       ],
@@ -464,16 +464,16 @@ export const hu: Strings = {
         },
         {
           title: '2. Beszédfelismerés (opcionális)',
-          body: 'A legtisztább megoldás a `pipx`: külön környezetbe teszi a Python-eszközöket, és gondoskodik róla, hogy a parancs a PATH-ra kerüljön.',
-          hint: 'A `pipx ensurepath` a shell profilodat írja át, tehát utána nyiss egy új terminált.',
+          body: 'A `whisper.cpp` egyetlen program, Python nélkül. A Homebrew a PATH-ra is felteszi.',
+          hint: 'A modell nincs benne: azt a Snitt tölti le az első használatkor.',
         },
       ],
       warn: {
-        title: 'Ha pipx nélkül telepíted',
-        body: 'A `pip3 install --user faster-whisper-cli` is működik, de a parancsot a `~/Library/Python/3.x/bin` könyvtárba teszi, ami alapból **nincs rajta a PATH-on**. Ilyenkor a telepítés sikerül, a Snitt viszont nem fogja megtalálni a `faster-whisper` parancsot. Vedd fel a könyvtárat a shell profilodba (`~/.zshrc`):',
-        codeLabel: '~/.zshrc',
+        title: 'Az első felismerés lassabb',
+        body: 'A beszédfelismeréshez modell kell, amit a Snitt az első használatkor tölt le — az alapértelmezett `small` nagyjából fél gigabájt. Utána helyben marad. Ha lassú a géped vagy a vonalad, egy kisebb modell is választható:',
+        codeLabel: 'Környezeti változó',
         after:
-          'A verziószámnak egyeznie kell a saját Pythonodéval — nézd meg a `python3 --version` kimenetét, és azt írd be a `3.9` helyére, különben a sor nem csinál semmit.',
+          'A kisebb modell gyorsabb, de pontatlanabb. A sorrend: `tiny`, `base`, `small`, `medium`, `large-v3`.',
       },
     },
 
@@ -481,7 +481,7 @@ export const hu: Strings = {
       steps: [
         {
           title: 'Debian / Ubuntu',
-          hint: 'A második sor csak akkor kell, ha beszédfelismerést is szeretnél. A `pipx ensurepath` után nyiss új terminált.',
+          hint: 'A `whisper-cpp` csak akkor kell, ha beszédfelismerést is szeretnél.',
         },
         {
           title: 'Fedora',
@@ -489,7 +489,7 @@ export const hu: Strings = {
         },
         {
           title: 'Arch',
-          hint: 'A Whisper ezután `pipx install faster-whisper-cli` paranccsal jön.',
+          hint: 'A `whisper.cpp` csomag neve itt `whisper.cpp` (ponttal).',
         },
       ],
       warn: {
@@ -510,7 +510,7 @@ export const hu: Strings = {
         { name: 'FFMPEG_BIN', body: 'az ffmpeg futtatható fájlja' },
         { name: 'FFPROBE_BIN', body: 'az ffprobe futtatható fájlja (az ffmpeg mellett érkezik)' },
         { name: 'YTDLP_BIN', body: 'a yt-dlp futtatható fájlja' },
-        { name: 'WHISPER_BIN', body: 'a faster-whisper parancs' },
+        { name: 'WHISPER_BIN', body: 'a whisper parancs (whisper-cli vagy faster-whisper)' },
       ],
     },
 

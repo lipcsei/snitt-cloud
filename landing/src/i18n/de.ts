@@ -12,7 +12,7 @@ export const de: Strings = {
     install: {
       title: 'Installation — Snitt',
       description:
-        'ffmpeg, yt-dlp und faster-whisper unter Windows, macOS und Linux installieren — Schritt für Schritt.',
+        'ffmpeg, yt-dlp und Whisper unter Windows, macOS und Linux installieren — Schritt für Schritt.',
     },
     profile: {
       title: 'Profil — Snitt',
@@ -297,7 +297,7 @@ export const de: Strings = {
       items: [
         '`ffmpeg` — zum Schneiden der Videos und zum Extrahieren der Tonspur.',
         '`yt-dlp` — wenn du ein Video über einen Link holen willst.',
-        '`faster-whisper` — wenn du Transkripte auch per Spracherkennung erzeugen willst.',
+        '`whisper.cpp` — wenn du Transkripte auch per Spracherkennung erzeugen willst.',
       ],
       foot: 'Wenn du nur vorhandene Untertitel in deinen eigenen Dateien durchsuchst, reicht `ffmpeg`. Die anderen beiden brauchst du erst, wenn du diese Funktionen wirklich nutzt.',
       cta: 'Installationsanleitung pro System →',
@@ -351,7 +351,7 @@ export const de: Strings = {
       {
         q: 'Funktioniert das auch, wenn ich überhaupt keine Untertitel habe?',
         a: [
-          'Ja, dafür ist Whisper da. Die Spracherkennung erstellt das Transkript aus der Tonspur des Videos, du bekommst also genau das, was gesagt wird — nicht die Lösung des Übersetzers. Dafür muss `faster-whisper` installiert sein, und bei längeren Filmen dauert dieser Schritt eine Weile; danach ist die Suche sofort da.',
+          'Ja, dafür ist Whisper da. Die Spracherkennung erstellt das Transkript aus der Tonspur des Videos, du bekommst also genau das, was gesagt wird — nicht die Lösung des Übersetzers. Dafür muss `whisper.cpp` installiert sein, und bei längeren Filmen dauert dieser Schritt eine Weile; danach ist die Suche sofort da.',
           'Die Installation sind pro System ein paar Befehle: Die [Installationsanleitung](/de/installation) führt dich durch.',
         ],
       },
@@ -418,8 +418,8 @@ export const de: Strings = {
         body: 'Nur dann, wenn du ein Video über einen Link in die Sammlung holen willst.',
       },
       {
-        name: 'faster-whisper',
-        body: 'Nur dann, wenn du Transkripte auch per Spracherkennung erzeugen willst. Der Befehl kommt aus dem Python-Paket `faster-whisper-cli`.',
+        name: 'whisper.cpp',
+        body: 'Nur dann, wenn du Transkripte auch per Spracherkennung erzeugen willst. Ein einziges Programm namens `whisper-cli` — ohne Python. Das Modell lädt Snitt beim ersten Mal herunter.',
       },
     ],
     tabsAria: 'Betriebssystem',
@@ -438,14 +438,14 @@ export const de: Strings = {
         },
         {
           title: '2. Spracherkennung (optional)',
-          body: 'Diesen Teil brauchst du nur, wenn du auch für Videos ohne Untertitel ein Transkript willst. Zuerst kommt Python, danach das Paket selbst.',
+          body: 'Diesen Teil brauchst du nur, wenn du auch für Videos ohne Untertitel ein Transkript willst. Ein einziges Programm, ohne Python.',
           codeLabel: 'PowerShell',
-          hint: 'Öffne nach der Python-Installation **ein neues PowerShell-Fenster**, sonst findet das System den Befehl `pip` noch nicht.',
+          hint: 'Öffne nach der Installation **ein neues PowerShell-Fenster**, sonst findet das System den Befehl `whisper-cli` noch nicht.',
           codeLabel2: 'Neues PowerShell-Fenster',
         },
         {
           title: 'Alternative: Chocolatey',
-          body: 'Wenn du Chocolatey nutzt, holst du `ffmpeg`, `yt-dlp` und Python mit einer einzigen Zeile:',
+          body: 'Wenn du Chocolatey nutzt, holst du `ffmpeg` und `yt-dlp` mit einer einzigen Zeile:',
           codeLabel: 'PowerShell (als Administrator)',
         },
       ],
@@ -464,16 +464,16 @@ export const de: Strings = {
         },
         {
           title: '2. Spracherkennung (optional)',
-          body: 'Am saubersten geht das mit `pipx`: Es legt Python-Werkzeuge in eine eigene Umgebung und sorgt dafür, dass der Befehl im PATH landet.',
-          hint: '`pipx ensurepath` schreibt dein Shell-Profil um, öffne danach also ein neues Terminal.',
+          body: '`whisper.cpp` ist ein einziges Programm, ganz ohne Python. Homebrew legt es in den PATH.',
+          hint: 'Das Modell ist nicht dabei: Snitt lädt es beim ersten Mal herunter.',
         },
       ],
       warn: {
-        title: 'Wenn du es ohne pipx installierst',
-        body: '`pip3 install --user faster-whisper-cli` funktioniert auch, legt den Befehl aber nach `~/Library/Python/3.x/bin` — und dieses Verzeichnis liegt standardmäßig **nicht im PATH**. Die Installation gelingt dann zwar, Snitt findet den Befehl `faster-whisper` aber nicht. Nimm das Verzeichnis in dein Shell-Profil auf (`~/.zshrc`):',
-        codeLabel: '~/.zshrc',
+        title: 'Die erste Erkennung dauert länger',
+        body: 'Die Spracherkennung braucht ein Modell, das Snitt beim ersten Mal herunterlädt — das voreingestellte `small` ist rund ein halbes Gigabyte. Danach bleibt es auf deinem Rechner. Wenn dein Rechner oder deine Leitung langsam ist, nimm ein kleineres:',
+        codeLabel: 'Umgebungsvariable',
         after:
-          'Die Versionsnummer muss zu deinem eigenen Python passen — sieh dir die Ausgabe von `python3 --version` an und setze sie anstelle von `3.9` ein, sonst bewirkt die Zeile nichts.',
+          'Ein kleineres Modell ist schneller, aber ungenauer. Der Reihe nach: `tiny`, `base`, `small`, `medium`, `large-v3`.',
       },
     },
 
@@ -481,7 +481,7 @@ export const de: Strings = {
       steps: [
         {
           title: 'Debian / Ubuntu',
-          hint: 'Die zweite Zeile brauchst du nur, wenn du auch Spracherkennung willst. Öffne nach `pipx ensurepath` ein neues Terminal.',
+          hint: '`whisper-cpp` brauchst du nur, wenn du auch Spracherkennung willst.',
         },
         {
           title: 'Fedora',
@@ -489,7 +489,7 @@ export const de: Strings = {
         },
         {
           title: 'Arch',
-          hint: 'Whisper kommt danach mit `pipx install faster-whisper-cli` dazu.',
+          hint: 'Das Paket heißt hier `whisper.cpp` (mit Punkt).',
         },
       ],
       warn: {
@@ -510,7 +510,7 @@ export const de: Strings = {
         { name: 'FFMPEG_BIN', body: 'die ausführbare Datei von ffmpeg' },
         { name: 'FFPROBE_BIN', body: 'die ausführbare Datei von ffprobe (kommt mit ffmpeg mit)' },
         { name: 'YTDLP_BIN', body: 'die ausführbare Datei von yt-dlp' },
-        { name: 'WHISPER_BIN', body: 'der Befehl faster-whisper' },
+        { name: 'WHISPER_BIN', body: 'der Whisper-Befehl (whisper-cli oder faster-whisper)' },
       ],
     },
 

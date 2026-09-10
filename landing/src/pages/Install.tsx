@@ -23,22 +23,22 @@ const OS_COMMANDS: Record<OsId, { steps: string[][]; warn?: string; warnAfter?: 
   windows: {
     steps: [
       ['winget install Gyan.FFmpeg\nwinget install yt-dlp.yt-dlp'],
-      ['winget install Python.Python.3.12', 'pip install faster-whisper-cli'],
+      ['winget install ggerganov.whisper-cpp'],
       ['choco install ffmpeg yt-dlp python'],
     ],
   },
   macos: {
     steps: [
       ['brew install ffmpeg yt-dlp'],
-      ['brew install pipx && pipx ensurepath\npipx install faster-whisper-cli'],
+      ['brew install whisper-cpp'],
     ],
-    warn: 'export PATH="$HOME/Library/Python/3.9/bin:$PATH"',
+    warn: 'WHISPER_MODEL=base',
   },
   linux: {
     steps: [
-      ['sudo apt install ffmpeg pipx\npipx install faster-whisper-cli'],
-      ['sudo dnf install ffmpeg yt-dlp pipx'],
-      ['sudo pacman -S ffmpeg yt-dlp python-pipx'],
+      ['sudo apt install ffmpeg whisper-cpp'],
+      ['sudo dnf install ffmpeg yt-dlp whisper-cpp'],
+      ['sudo pacman -S ffmpeg yt-dlp whisper.cpp'],
     ],
     warn:
       'sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp\nsudo chmod a+rx /usr/local/bin/yt-dlp',
@@ -46,7 +46,7 @@ const OS_COMMANDS: Record<OsId, { steps: string[][]; warn?: string; warnAfter?: 
   },
 };
 
-const CHECK_COMMANDS = 'ffmpeg -version\nyt-dlp --version\nfaster-whisper --help';
+const CHECK_COMMANDS = 'ffmpeg -version\nyt-dlp --version\nwhisper-cli --help';
 
 // Csak a kezdő fület találjuk ki belőle; mindhárom rendszer kézzel is elérhető marad,
 // tehát a téves tipp legrosszabb esetben egy kattintás.

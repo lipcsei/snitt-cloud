@@ -12,7 +12,7 @@ export const en: Strings = {
     install: {
       title: 'Installation — Snitt',
       description:
-        'How to install ffmpeg, yt-dlp and faster-whisper on Windows, macOS and Linux, step by step.',
+        'How to install ffmpeg, yt-dlp and whisper on Windows, macOS and Linux, step by step.',
     },
     profile: {
       title: 'Profile — Snitt',
@@ -289,7 +289,7 @@ export const en: Strings = {
       items: [
         '`ffmpeg` — for cutting the videos and extracting the audio track.',
         '`yt-dlp` — if you want to bring in a video from a link.',
-        '`faster-whisper` — if you want transcripts from speech recognition too.',
+        '`whisper.cpp` — if you want transcripts from speech recognition too.',
       ],
       foot: 'If you only search existing subtitles across your own files, `ffmpeg` is enough. The other two matter when you actually use those features.',
       cta: 'Installation guide per system →',
@@ -343,7 +343,7 @@ export const en: Strings = {
       {
         q: 'Does it work if I have no subtitles at all?',
         a: [
-          'Yes, that is where Whisper comes in. Speech recognition builds the transcript from the audio track of the video, so you get exactly what is said — not the translator’s solution. This needs `faster-whisper` installed, and on longer films the step takes a while; after that, search is instant.',
+          'Yes, that is where Whisper comes in. Speech recognition builds the transcript from the audio track of the video, so you get exactly what is said — not the translator’s solution. This needs `whisper.cpp` installed, and on longer films the step takes a while; after that, search is instant.',
           'Installing it is a couple of commands per system: the [installation guide](/en/install) walks you through it.',
         ],
       },
@@ -410,8 +410,8 @@ export const en: Strings = {
         body: 'Only if you want to bring a video into the library from a link.',
       },
       {
-        name: 'faster-whisper',
-        body: 'Only if you want transcripts from speech recognition too. The command comes from the `faster-whisper-cli` Python package.',
+        name: 'whisper.cpp',
+        body: 'Only if you want transcripts from speech recognition too. A single program called `whisper-cli` — no Python needed. Snitt downloads the model on first use.',
       },
     ],
     tabsAria: 'Operating system',
@@ -430,14 +430,14 @@ export const en: Strings = {
         },
         {
           title: '2. Speech recognition (optional)',
-          body: 'This part is only needed if you want transcripts for videos without subtitles. First comes Python, then the package itself.',
+          body: 'This part is only needed if you want transcripts for videos without subtitles. A single program, no Python.',
           codeLabel: 'PowerShell',
-          hint: 'After installing Python, **open a new PowerShell window**, otherwise the system will not find the `pip` command yet.',
+          hint: 'After installing, **open a new PowerShell window**, otherwise the system will not find the `whisper-cli` command yet.',
           codeLabel2: 'New PowerShell window',
         },
         {
           title: 'Alternative: Chocolatey',
-          body: 'If you use Chocolatey, one line gets you `ffmpeg`, `yt-dlp` and Python:',
+          body: 'If you use Chocolatey, one line gets you `ffmpeg` and `yt-dlp`:',
           codeLabel: 'PowerShell (administrator)',
         },
       ],
@@ -456,16 +456,16 @@ export const en: Strings = {
         },
         {
           title: '2. Speech recognition (optional)',
-          body: 'The cleanest option is `pipx`: it puts Python tools into their own environment and makes sure the command ends up on the PATH.',
-          hint: '`pipx ensurepath` rewrites your shell profile, so open a new terminal afterwards.',
+          body: '`whisper.cpp` is a single program, no Python involved. Homebrew puts it on your PATH.',
+          hint: 'The model is not included: Snitt downloads it on first use.',
         },
       ],
       warn: {
-        title: 'If you install it without pipx',
-        body: '`pip3 install --user faster-whisper-cli` works too, but it puts the command in `~/Library/Python/3.x/bin`, which is **not on the PATH** by default. The install then succeeds, but Snitt will not find the `faster-whisper` command. Add the directory to your shell profile (`~/.zshrc`):',
-        codeLabel: '~/.zshrc',
+        title: 'The first transcription is slower',
+        body: 'Speech recognition needs a model, which Snitt downloads on first use — the default `small` is about half a gigabyte. After that it stays on your machine. If your computer or connection is slow, pick a smaller one:',
+        codeLabel: 'Environment variable',
         after:
-          'The version number has to match your own Python — check the output of `python3 --version` and put that in place of `3.9`, otherwise the line does nothing.',
+          'A smaller model is faster but less accurate. In order: `tiny`, `base`, `small`, `medium`, `large-v3`.',
       },
     },
 
@@ -473,7 +473,7 @@ export const en: Strings = {
       steps: [
         {
           title: 'Debian / Ubuntu',
-          hint: 'The second line is only needed if you want speech recognition too. Open a new terminal after `pipx ensurepath`.',
+          hint: '`whisper-cpp` is only needed if you want speech recognition too.',
         },
         {
           title: 'Fedora',
@@ -481,7 +481,7 @@ export const en: Strings = {
         },
         {
           title: 'Arch',
-          hint: 'Whisper then comes with `pipx install faster-whisper-cli`.',
+          hint: 'The package is called `whisper.cpp` here (with a dot).',
         },
       ],
       warn: {
@@ -502,7 +502,7 @@ export const en: Strings = {
         { name: 'FFMPEG_BIN', body: 'the ffmpeg executable' },
         { name: 'FFPROBE_BIN', body: 'the ffprobe executable (it ships with ffmpeg)' },
         { name: 'YTDLP_BIN', body: 'the yt-dlp executable' },
-        { name: 'WHISPER_BIN', body: 'the faster-whisper command' },
+        { name: 'WHISPER_BIN', body: 'the whisper command (whisper-cli or faster-whisper)' },
       ],
     },
 
