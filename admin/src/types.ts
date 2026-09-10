@@ -140,7 +140,11 @@ export type AuditAction =
   | 'subscription.reactivate'
   | 'invoice.create'
   | 'invoice.pay'
-  | 'invoice.void';
+  | 'invoice.void'
+  | 'entitlement.grant'
+  | 'entitlement.revoke'
+  | 'user.enable'
+  | 'user.disable';
 
 export type AuditEntry = {
   id: string;

@@ -17,6 +17,10 @@ const (
 	AuditInvoiceCreate          = "invoice.create"
 	AuditInvoicePay             = "invoice.pay"
 	AuditInvoiceVoid            = "invoice.void"
+	AuditEntitlementGrant       = "entitlement.grant"
+	AuditEntitlementRevoke      = "entitlement.revoke"
+	AuditUserEnable             = "user.enable"
+	AuditUserDisable            = "user.disable"
 )
 
 // AuditActions a naplóban előforduló műveletek teljes listája, a felület
@@ -30,6 +34,10 @@ func AuditActions() []string {
 		AuditInvoiceCreate,
 		AuditInvoicePay,
 		AuditInvoiceVoid,
+		AuditEntitlementGrant,
+		AuditEntitlementRevoke,
+		AuditUserEnable,
+		AuditUserDisable,
 	}
 }
 

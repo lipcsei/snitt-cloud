@@ -5,6 +5,11 @@ import { InvoiceBadge, PlanBadge, SubscriptionBadge } from '../components/Badges
 import { CreateInvoiceDialog, InvoiceActions } from '../components/InvoiceActions';
 import { Page } from '../components/Layout';
 import { GrantDialog, SubscriptionActions } from '../components/SubscriptionActions';
+import {
+  AccountStateDialog,
+  GrantEntitlementDialog,
+  RevokeEntitlementDialog,
+} from '../components/UserActions';
 import { Banner, Empty, ErrorBox, Loading } from '../components/States';
 import { auditActionLabel, formatDate, formatDateTime, formatMoney } from '../format';
 import { useAsync, usePlans } from '../hooks';
@@ -76,7 +81,11 @@ function UserAudit({ subject, stamp }: { subject: string; stamp: number }) {
 export function UserDetail() {
   const { subject = '' } = useParams();
   const [notice, setNotice] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'grant' | 'invoice' | null>(null);
+  const [dialog, setDialog] = useState<'grant' | 'invoice' | 'entitlement' | 'account' | null>(
+    null,
+  );
+  // Melyik jogosultságot vonjuk vissza (kulcs), ha van nyitott megerősítés.
+  const [revoking, setRevoking] = useState<string | null>(null);
   // Minden sikeres művelet után az előzmények is újratöltenek.
   const [stamp, setStamp] = useState(0);
 
@@ -100,6 +109,9 @@ export function UserDetail() {
   const label = user.full_name || user.email || user.username || user.subject;
   const live = data.subscriptions.find((s) => s.status === 'active' || s.status === 'past_due');
   const currency = plans.data?.currency ?? live?.currency ?? 'HUF';
+  // A csomagok által vezérelt kulcsok: ezekre a kézi kiadás figyelmeztet,
+  // mert a következő előfizetés-művelet felülírja őket.
+  const managedKeys = [...new Set((plans.data?.plans ?? []).flatMap((p) => p.feature_keys))];
 
   return (
     <Page
@@ -117,6 +129,13 @@ export function UserDetail() {
           ) : null}
           <button type="button" className="btn btn--ghost" onClick={() => setDialog('invoice')}>
             Számla kiállítása
+          </button>
+          <button
+            type="button"
+            className={user.enabled ? 'btn btn--danger-ghost' : 'btn btn--ghost'}
+            onClick={() => setDialog('account')}
+          >
+            {user.enabled ? 'Fiók letiltása' : 'Fiók engedélyezése'}
           </button>
         </>
       }
@@ -167,6 +186,13 @@ export function UserDetail() {
         <div className="panel">
           <div className="panel__head">
             <h2>Jogosultságok</h2>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setDialog('entitlement')}
+            >
+              Kiadás
+            </button>
           </div>
           {data.entitlements.length === 0 ? (
             <p className="muted panel__body">
@@ -179,6 +205,7 @@ export function UserDetail() {
                   <th>Kulcs</th>
                   <th>Kiadva</th>
                   <th>Lejár</th>
+                  <th className="right">Művelet</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,6 +220,15 @@ export function UserDetail() {
                       <td>
                         {e.expires_at ? formatDate(e.expires_at) : <span className="muted">soha</span>}
                         {expired ? <span className="pill pill--muted">lejárt</span> : null}
+                      </td>
+                      <td className="right">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => setRevoking(e.feature_key)}
+                        >
+                          Visszavonás
+                        </button>
                       </td>
                     </tr>
                   );
@@ -303,6 +339,32 @@ export function UserDetail() {
           plans={plans.data.plans}
           currency={plans.data.currency}
           onClose={() => setDialog(null)}
+          onDone={done}
+        />
+      ) : null}
+      {dialog === 'entitlement' ? (
+        <GrantEntitlementDialog
+          subject={user.subject}
+          subjectLabel={label}
+          managedKeys={managedKeys}
+          onClose={() => setDialog(null)}
+          onDone={done}
+        />
+      ) : null}
+      {dialog === 'account' ? (
+        <AccountStateDialog
+          subject={user.subject}
+          subjectLabel={label}
+          enabled={user.enabled}
+          onClose={() => setDialog(null)}
+          onDone={done}
+        />
+      ) : null}
+      {revoking ? (
+        <RevokeEntitlementDialog
+          subject={user.subject}
+          featureKey={revoking}
+          onClose={() => setRevoking(null)}
           onDone={done}
         />
       ) : null}

@@ -67,9 +67,16 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `ADMIN_ROLE` | `admin` | Az a realm szerep, ami az `/api/v1/admin/*` végpontokat nyitja. |
 | `DEFAULT_CURRENCY` | `HUF` | Alapértelmezett pénznem (ISO 4217). |
 
-A service accountnak a `realm-management` kliensen `view-users` (és a lapozáshoz `query-users`)
-szerep kell; a [`keycloak/realm-export.json`](../../keycloak/realm-export.json) ezt már
-tartalmazza.
+A service accountnak a `realm-management` kliensen `view-users` (a lapozáshoz `query-users`, a
+fiók letiltásához/engedélyezéséhez pedig `manage-users`) szerep kell; a
+[`keycloak/realm-export.json`](../../keycloak/realm-export.json) ezt már tartalmazza.
+
+> A realm import **csak akkor fut le, ha a realm még nem létezik.** Egy már működő Keycloakon
+> tehát az export módosítása önmagában nem hat: a `manage-users` szerepet pótolni kell. Erre
+> való a [`deploy/scripts/grant-manage-users.sh`](../../deploy/scripts/grant-manage-users.sh),
+> vagy kézzel: Clients → `snitt-admin-api` → Service accounts roles → Assign role →
+> `realm-management manage-users`. Enélkül a fiók letiltása `502`-t ad, a hibaüzenetben a
+> Keycloak `403`-mal.
 
 ## Végpontok
 
@@ -122,7 +129,44 @@ A hívó le nem járt jogosultságai. **Az üres lista normál válasz, nem hiba
 ```
 
 A válasz szándékosan objektum, nem csupasz tömb: így később bővíthető a kliensek törése nélkül.
-Jogosultságot egyelőre nem ad ki API – kézzel, SQL-lel kerül a táblába.
+Jogosultságot az előfizetés kiadása ad ki automatikusan (a csomag `feature_keys` mezője
+szerint), a csomagon kívülieket pedig az admin, kézzel – lásd a következő végpontot.
+
+### `POST /api/v1/admin/users/{subject}/entitlements`
+
+Kézi jogosultság-kiadás. A kulcs szándékosan szabad szöveg (`^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$`):
+a csomagokon kívüli kulcsok – béta-hozzáférés, egyedi megállapodás – éppen ettől lehetségesek.
+
+```json
+{ "feature_key": "beta-access", "days": 30, "note": "egyedi megállapodás szerint" }
+```
+
+A `days` elhagyása **lejárat nélküli** jogosultságot ad; ugyanarra a kulcsra ismételve nem
+ütközik, hanem hosszabbít. Válasz `201`, a kiadott jogosultsággal.
+
+Ha a kulcs csomaghoz tartozik (`ai-semantic-search`, `ai-video-understanding`), a válasz
+`warning` mezőt is hoz: az ilyen kulcsokat a felhasználó következő előfizetés-művelete
+felülírja, mert azokat a csomag vezérli.
+
+### `DELETE /api/v1/admin/users/{subject}/entitlements/{key}`
+
+Jogosultság visszavonása. Ha nem volt kiadva: `404` – nem néma siker.
+
+### `PATCH /api/v1/admin/users/{subject}`
+
+A Keycloak fiók engedélyezése vagy letiltása. Ez az egyetlen admin művelet, ami az
+identitást birtokló rendszerbe ír.
+
+```json
+{ "enabled": false, "note": "visszaélés gyanúja" }
+```
+
+Válasz `200` `{"enabled": false, "changed": true}`. Ha a fiók már ebben az állapotban volt,
+`changed: false`, és nem történik sem Keycloak-írás, sem naplózás. A letiltott felhasználó nem
+tud belépni és a tokenjét sem tudja frissíteni; a jogosultságai és a számlái érintetlenek
+maradnak.
+
+Ehhez a service accountnak `manage-users` szerep kell (lásd fent); enélkül a válasz `502`.
 
 ### `GET /api/v1/admin/audit`
 

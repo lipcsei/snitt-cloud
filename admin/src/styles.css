@@ -291,6 +291,12 @@ code {
   background: transparent;
 }
 
+/* Táblasoron belüli művelet: ne nyomja szét a sormagasságot. */
+.btn--sm {
+  padding: 4px 9px;
+  font-size: 0.82rem;
+}
+
 .btn--danger {
   background: var(--pink);
   border-color: transparent;

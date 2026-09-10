@@ -55,6 +55,9 @@ type fakeDirectory struct {
 	lastSearch string
 	lastFirst  int
 	lastMax    int
+
+	setEnabledErr error
+	enabledCalls  int
 }
 
 func (d *fakeDirectory) ListUsers(_ context.Context, search string, first, max int) ([]keycloak.User, error) {
@@ -70,6 +73,20 @@ func (d *fakeDirectory) CountUsers(_ context.Context, _ string) (int, error) {
 		return 0, d.countErr
 	}
 	return len(d.users), nil
+}
+
+func (d *fakeDirectory) SetUserEnabled(_ context.Context, id string, enabled bool) error {
+	if d.setEnabledErr != nil {
+		return d.setEnabledErr
+	}
+	for i := range d.users {
+		if d.users[i].ID == id {
+			d.users[i].Enabled = enabled
+			d.enabledCalls++
+			return nil
+		}
+	}
+	return keycloak.ErrNotFound
 }
 
 func (d *fakeDirectory) GetUser(_ context.Context, id string) (keycloak.User, error) {
@@ -369,6 +386,41 @@ func (f *fakeStore) Overview(context.Context) (store.Overview, error) {
 	return f.admin.overview, nil
 }
 
+func (f *fakeStore) GrantEntitlement(_ context.Context, subject, key string, expiresAt *time.Time) (store.Entitlement, error) {
+	if f.admin.err != nil {
+		return store.Entitlement{}, f.admin.err
+	}
+	if f.admin.entitlements == nil {
+		f.admin.entitlements = map[string][]store.Entitlement{}
+	}
+	e := store.Entitlement{FeatureKey: key, GrantedAt: time.Now().UTC(), ExpiresAt: expiresAt}
+	list := f.admin.entitlements[subject]
+	for i := range list {
+		if list[i].FeatureKey == key {
+			list[i] = e
+			f.admin.entitlements[subject] = list
+			return e, nil
+		}
+	}
+	f.admin.entitlements[subject] = append(list, e)
+	return e, nil
+}
+
+func (f *fakeStore) RevokeEntitlement(_ context.Context, subject, key string) (store.Entitlement, error) {
+	if f.admin.err != nil {
+		return store.Entitlement{}, f.admin.err
+	}
+	list := f.admin.entitlements[subject]
+	for i := range list {
+		if list[i].FeatureKey == key {
+			e := list[i]
+			f.admin.entitlements[subject] = append(list[:i:i], list[i+1:]...)
+			return e, nil
+		}
+	}
+	return store.Entitlement{}, store.ErrNotFound
+}
+
 func (f *fakeStore) RecordAudit(_ context.Context, in store.NewAuditEntry) (store.AuditEntry, error) {
 	if f.admin.auditErr != nil {
 		return store.AuditEntry{}, f.admin.auditErr
@@ -457,6 +509,9 @@ func TestAdminRoutesRequireAdminRole(t *testing.T) {
 		{http.MethodPost, "/api/v1/admin/invoices/i1/pay", `{}`},
 		{http.MethodPost, "/api/v1/admin/invoices/i1/void", `{}`},
 		{http.MethodGet, "/api/v1/admin/audit", ""},
+		{http.MethodPatch, "/api/v1/admin/users/u1", `{"enabled":false}`},
+		{http.MethodPost, "/api/v1/admin/users/u1/entitlements", `{"feature_key":"beta"}`},
+		{http.MethodDelete, "/api/v1/admin/users/u1/entitlements/beta", ""},
 	}
 
 	for _, rt := range routes {

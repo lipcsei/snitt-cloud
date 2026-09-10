@@ -1,6 +1,7 @@
 import { API_BASE_URL, keycloak } from './auth';
 import type {
   AuditResponse,
+  Entitlement,
   InvoicesResponse,
   InvoiceView,
   Overview,
@@ -167,6 +168,27 @@ export const api = {
     request<{ invoice: InvoiceView }>(
       `/api/v1/admin/invoices/${encodeURIComponent(id)}/void`,
       post(note ? { note } : {}),
+    ),
+
+  grantEntitlement: (
+    subject: string,
+    body: { feature_key: string; days?: number; note?: string },
+  ) =>
+    request<{ entitlement: Entitlement; warning?: string }>(
+      `/api/v1/admin/users/${encodeURIComponent(subject)}/entitlements`,
+      post(body),
+    ),
+
+  revokeEntitlement: (subject: string, featureKey: string) =>
+    request<{ entitlement: Entitlement }>(
+      `/api/v1/admin/users/${encodeURIComponent(subject)}/entitlements/${encodeURIComponent(featureKey)}`,
+      { method: 'DELETE' },
+    ),
+
+  setUserEnabled: (subject: string, enabled: boolean, note?: string) =>
+    request<{ enabled: boolean; changed: boolean }>(
+      `/api/v1/admin/users/${encodeURIComponent(subject)}`,
+      { method: 'PATCH', body: JSON.stringify(note ? { enabled, note } : { enabled }) },
     ),
 
   audit: (params: {

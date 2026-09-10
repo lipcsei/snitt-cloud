@@ -42,6 +42,9 @@ type Store interface {
 	MarkInvoicePaid(ctx context.Context, id string, paidAt time.Time, externalID string) (store.Invoice, error)
 	VoidInvoice(ctx context.Context, id, note string) (store.Invoice, error)
 
+	GrantEntitlement(ctx context.Context, subject, featureKey string, expiresAt *time.Time) (store.Entitlement, error)
+	RevokeEntitlement(ctx context.Context, subject, featureKey string) (store.Entitlement, error)
+
 	Overview(ctx context.Context) (store.Overview, error)
 
 	RecordAudit(ctx context.Context, in store.NewAuditEntry) (store.AuditEntry, error)

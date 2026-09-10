@@ -3,32 +3,9 @@ import { api } from '../api';
 import { formatDate, formatMoney, fromMinor, toMinor } from '../format';
 import type { Plan, Subscription } from '../types';
 import { Modal } from './Modal';
+import { useAction, type Done } from './useAction';
 import { ErrorBox } from './States';
 
-type Done = (message: string) => void;
-
-function useAction(onDone: Done, onClose: () => void) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-
-  const run = async (fn: () => Promise<void>, message: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-      onClose();
-      onDone(message);
-    } catch (err) {
-      // A hiba a dialógusban marad, hogy az admin lássa, mi nem sikerült,
-      // és a beírt adatok se vesszenek el.
-      setError(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { busy, error, run };
-}
 
 function PlanPicker({
   plans,

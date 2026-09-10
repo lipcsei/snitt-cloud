@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -97,3 +98,64 @@ func TestAuditRoundTrip(t *testing.T) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// A kézi jogosultság kiadása felülír (upsert) és visszavon. Ugyanaz a
+// kockázat, mint a naplónál: az SQL, nem a Go kód.
+func TestEntitlementGrantRevoke(t *testing.T) {
+	url := os.Getenv("TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("TEST_DATABASE_URL nincs beállítva")
+	}
+	ctx := context.Background()
+
+	st, err := New(ctx, url)
+	if err != nil {
+		t.Fatalf("kapcsolódás: %v", err)
+	}
+	t.Cleanup(st.Close)
+	if err := st.Migrate(ctx); err != nil {
+		t.Fatalf("séma: %v", err)
+	}
+
+	subject := "test-subject-" + newID()
+	t.Cleanup(func() {
+		if _, err := st.pool.Exec(ctx, `DELETE FROM entitlements WHERE subject = $1`, subject); err != nil {
+			t.Errorf("takarítás: %v", err)
+		}
+	})
+
+	// Először lejárat nélkül.
+	e, err := st.GrantEntitlement(ctx, subject, "beta-access", nil)
+	if err != nil {
+		t.Fatalf("kiadás: %v", err)
+	}
+	if e.ExpiresAt != nil {
+		t.Errorf("lejárat = %v, várt nil", e.ExpiresAt)
+	}
+
+	// Ugyanaz a kulcs újra: nem ütközés, hanem hosszabbítás.
+	until := time.Now().UTC().Add(30 * 24 * time.Hour).Truncate(time.Second)
+	e, err = st.GrantEntitlement(ctx, subject, "beta-access", &until)
+	if err != nil {
+		t.Fatalf("ismételt kiadás: %v", err)
+	}
+	if e.ExpiresAt == nil || !e.ExpiresAt.Equal(until) {
+		t.Errorf("lejárat = %v, várt %v", e.ExpiresAt, until)
+	}
+
+	all, err := st.AllEntitlements(ctx, subject)
+	if err != nil {
+		t.Fatalf("lekérdezés: %v", err)
+	}
+	if len(all) != 1 {
+		t.Fatalf("jogosultságok = %+v, várt 1 sor", all)
+	}
+
+	if _, err := st.RevokeEntitlement(ctx, subject, "beta-access"); err != nil {
+		t.Fatalf("visszavonás: %v", err)
+	}
+	// Ami nincs kiadva, arra ErrNotFound jön - nem néma siker.
+	if _, err := st.RevokeEntitlement(ctx, subject, "beta-access"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("ismételt visszavonás hibája = %v, várt ErrNotFound", err)
+	}
+}

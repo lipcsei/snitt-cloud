@@ -3,30 +3,9 @@ import { api } from '../api';
 import { formatDate, formatMoney, toMinor } from '../format';
 import type { Invoice } from '../types';
 import { Modal } from './Modal';
+import { useAction, type Done } from './useAction';
 import { ErrorBox } from './States';
 
-type Done = (message: string) => void;
-
-function useAction(onDone: Done, onClose: () => void) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-
-  const run = async (fn: () => Promise<unknown>, message: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-      onClose();
-      onDone(message);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { busy, error, run };
-}
 
 export function PayDialog({
   invoice,

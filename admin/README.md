@@ -72,7 +72,8 @@ csak a szerep más.
   a felhasználószám helyén `–` áll, és egy sáv megmondja, miért – a többi szám marad.
 - **Felhasználók** – kereshető (e-mail, felhasználónév, név), lapozott lista. Az adatlapon a
   Keycloak identitás, a helyi profil, a jogosultságok, az előfizetések és a számlák együtt
-  látszanak, a műveletekkel egy helyen.
+  látszanak, a műveletekkel egy helyen: **jogosultság kézi kiadása és visszavonása**, valamint
+  a **fiók letiltása / engedélyezése**.
 - **Előfizetések** – csomag és állapot szerint szűrhető lista, kiadás / csomagváltás /
   lemondás / visszakapcsolás.
 - **Számlázás** – állapot és felhasználó szerinti szűrés, szűrésre vetített összesítők
@@ -96,6 +97,23 @@ Ez pénzügyi belső eszköz, ezért:
   visszakapcsolás, számla kiállítása, kifizetettre jelölése és sztornózása egyaránt bejegyzést
   ír a végrehajtó admin azonosítójával. A napló csak nő – törölni és szerkeszteni a felületről
   nem lehet.
+
+## Jogosultságok és fiókállapot
+
+A **jogosultság** kulcsa szabad szöveg. Ez szándékos: a csomagokon kívüli kulcsok –
+béta-hozzáférés, egyedi megállapodás – éppen ettől lehetségesek. A csomaghoz tartozó kulcsokra
+(`ai-semantic-search`, `ai-video-understanding`) a dialógus figyelmeztet: azokat a felhasználó
+következő előfizetés-műveletekor a szinkronizáció **felülírja**, tehát tartós hozzáférést nem
+így kell adni, hanem előfizetéssel.
+
+A **fiók letiltása** az egyetlen művelet, ami az identitást birtokló rendszerbe (Keycloak) ír.
+A letiltott felhasználó nem tud belépni, és a munkamenete sem frissül tovább; az előfizetése, a
+jogosultságai és a számlái viszont érintetlenek maradnak – ez csak a belépést zárja. A desktop
+app nála fiók nélkül továbbra is működik, csak a felhő funkciók állnak le.
+
+> Ehhez a Keycloak service accountjának `manage-users` szerep kell. Ha a realm még a szerep
+> bevezetése előtt jött létre, a művelet `502`-t ad; a pótlás egy lépés:
+> [`deploy/scripts/grant-manage-users.sh`](../deploy/scripts/grant-manage-users.sh).
 
 ## A fizetési szolgáltató illesztési pontja
 
@@ -146,7 +164,7 @@ src/AuthProvider.tsx    bejelentkezés, token-frissítés, jogosultsági állapo
 src/api.ts              tipizált admin API kliens, ApiError a szerver üzenetével
 src/hooks.ts            useAsync / useDebounced / usePlans
 src/format.ts           pénz-, dátum- és státuszformázás (hu-HU)
-src/components/         elrendezés, tábla-kiegészítők, modálisok, műveletek
+src/components/         elrendezés, tábla-kiegészítők, modálisok, műveletek (useAction)
 src/pages/              Vezérlőpult, Felhasználók, Adatlap, Előfizetések, Számlázás, Napló
 src/styles.css          a teljes stíluslap, CSS változókkal
 ```

@@ -6,6 +6,7 @@
 package keycloak
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -122,19 +123,51 @@ func (c *AdminClient) GetUser(ctx context.Context, id string) (User, error) {
 	return u, nil
 }
 
+// SetUserEnabled a Keycloak fiókot engedélyezi vagy letiltja. Letiltott
+// fiókkal se belépni, se tokent frissíteni nem lehet – ez az egyetlen olyan
+// admin művelet, ami a felhasználó azonosságát birtokló rendszert írja.
+//
+// Ehhez a service accountnak manage-users szerep kell a realm-management
+// kliensen; e nélkül a Keycloak 403-at ad, és a hibaüzenet ezt meg is mondja.
+func (c *AdminClient) SetUserEnabled(ctx context.Context, id string, enabled bool) error {
+	// Szándékosan csak az enabled mezőt küldjük: a Keycloak a hiányzó
+	// mezőket változatlanul hagyja, így egy párhuzamos szerkesztés nem
+	// íródik felül.
+	body := map[string]any{"enabled": enabled}
+	return c.doJSON(ctx, http.MethodPut, "/users/"+url.PathEscape(id), body, nil)
+}
+
 func (c *AdminClient) getJSON(ctx context.Context, path string, out any) error {
+	return c.doJSON(ctx, http.MethodGet, path, nil, out)
+}
+
+// doJSON a közös Keycloak admin API hívás: token, hibafordítás, JSON.
+// Az in nil értéke törzs nélküli kérés, az out nil értéke eldobott válasz.
+func (c *AdminClient) doJSON(ctx context.Context, method, path string, in, out any) error {
 	tok, err := c.accessToken(ctx)
 	if err != nil {
 		return err
 	}
 
+	var payload io.Reader
+	if in != nil {
+		buf, err := json.Marshal(in)
+		if err != nil {
+			return fmt.Errorf("keycloak kérés törzse: %w", err)
+		}
+		payload = bytes.NewReader(buf)
+	}
+
 	endpoint := c.baseURL + "/admin/realms/" + url.PathEscape(c.realm) + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, payload)
 	if err != nil {
 		return fmt.Errorf("keycloak kérés összeállítása: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+tok)
 	req.Header.Set("Accept", "application/json")
+	if in != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := c.hc.Do(req)
 	if err != nil {
@@ -155,6 +188,10 @@ func (c *AdminClient) getJSON(ctx context.Context, path string, out any) error {
 		return fmt.Errorf("keycloak admin API hiba (%d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
+	if out == nil {
+		// A módosító hívások 204-et adnak, üres törzzsel.
+		return nil
+	}
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
 		return fmt.Errorf("keycloak válasz dekódolása: %w", err)
 	}

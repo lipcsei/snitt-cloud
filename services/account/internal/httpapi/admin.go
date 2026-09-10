@@ -23,6 +23,7 @@ type UserDirectory interface {
 	ListUsers(ctx context.Context, search string, first, max int) ([]keycloak.User, error)
 	CountUsers(ctx context.Context, search string) (int, error)
 	GetUser(ctx context.Context, id string) (keycloak.User, error)
+	SetUserEnabled(ctx context.Context, id string, enabled bool) error
 }
 
 const (
@@ -99,6 +100,10 @@ func (a *API) adminRoutes(mux *http.ServeMux) {
 
 	mux.Handle("GET /api/v1/admin/users", guard(a.handleListUsers))
 	mux.Handle("GET /api/v1/admin/users/{subject}", guard(a.handleGetUser))
+	mux.Handle("PATCH /api/v1/admin/users/{subject}", guard(a.handlePatchUser))
+
+	mux.Handle("POST /api/v1/admin/users/{subject}/entitlements", guard(a.handleGrantEntitlement))
+	mux.Handle("DELETE /api/v1/admin/users/{subject}/entitlements/{key}", guard(a.handleRevokeEntitlement))
 
 	mux.Handle("GET /api/v1/admin/subscriptions", guard(a.handleListSubscriptions))
 	mux.Handle("POST /api/v1/admin/subscriptions", guard(a.handleGrantSubscription))

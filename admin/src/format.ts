@@ -86,6 +86,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'invoice.create': 'Számla kiállítva',
   'invoice.pay': 'Számla kifizetve',
   'invoice.void': 'Számla sztornózva',
+  'entitlement.grant': 'Jogosultság kiadva',
+  'entitlement.revoke': 'Jogosultság visszavonva',
+  'user.enable': 'Fiók engedélyezve',
+  'user.disable': 'Fiók letiltva',
 };
 
 export function auditActionLabel(action: string): string {
