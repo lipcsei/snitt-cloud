@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthProvider';
+import { fill, useI18n } from '../i18n';
 
 export default function Profile() {
   const { ready, authenticated, profile, login, logout, accountUrl } = useAuth();
+  const { t, path } = useI18n();
 
   // Védett oldal: amint kiderül, hogy nincs session, megyünk a bejelentkezésre.
   useEffect(() => {
@@ -14,7 +16,7 @@ export default function Profile() {
     return (
       <main className="page">
         <div className="container container-narrow">
-          <p className="muted">Bejelentkezés ellenőrzése…</p>
+          <p className="muted">{t.profile.checking}</p>
         </div>
       </main>
     );
@@ -24,16 +26,14 @@ export default function Profile() {
     return (
       <main className="page">
         <div className="container container-narrow">
-          <h1>Bejelentkezés szükséges</h1>
-          <p className="muted">
-            Ez az oldal csak bejelentkezve érhető el. Ha az átirányítás nem indul el magától:
-          </p>
+          <h1>{t.profile.needLoginTitle}</h1>
+          <p className="muted">{t.profile.needLoginBody}</p>
           <div className="account-cta">
             <button type="button" className="btn btn-primary" onClick={login}>
-              Bejelentkezés
+              {t.profile.login}
             </button>
-            <Link to="/" className="btn btn-outline">
-              Vissza a főoldalra
+            <Link to={path('home')} className="btn btn-outline">
+              {t.profile.backHome}
             </Link>
           </div>
         </div>
@@ -44,22 +44,19 @@ export default function Profile() {
   return (
     <main className="page">
       <div className="container container-narrow">
-        <span className="eyebrow">Profil</span>
-        <h1>Szia, {profile.name}!</h1>
-        <p className="muted">
-          Ez a fiók a weboldalhoz tartozik. Az asztali alkalmazás használatához nincs rá szükség —
-          a készülő extra funkciókhoz lesz.
-        </p>
+        <span className="eyebrow">{t.profile.eyebrow}</span>
+        <h1>{fill(t.profile.greeting, { name: profile.name })}</h1>
+        <p className="muted">{t.profile.intro}</p>
 
         <div className="panel profile-panel">
           <dl className="profile-data">
             <div>
-              <dt>Név</dt>
+              <dt>{t.profile.nameLabel}</dt>
               <dd>{profile.name}</dd>
             </div>
             <div>
-              <dt>E-mail</dt>
-              <dd>{profile.email || <span className="muted">nincs megadva</span>}</dd>
+              <dt>{t.profile.emailLabel}</dt>
+              <dd>{profile.email || <span className="muted">{t.profile.noEmail}</span>}</dd>
             </div>
           </dl>
 
@@ -70,21 +67,18 @@ export default function Profile() {
               target="_blank"
               rel="noreferrer noopener"
             >
-              Fiók kezelése
+              {t.profile.manage}
             </a>
             <button type="button" className="btn btn-outline" onClick={logout}>
-              Kijelentkezés
+              {t.profile.logout}
             </button>
           </div>
 
-          <p className="profile-hint">
-            A „Fiók kezelése” a Keycloak fiókkonzolját nyitja meg: ott tudsz jelszót változtatni,
-            kétlépcsős azonosítást beállítani vagy a fiókodat törölni.
-          </p>
+          <p className="profile-hint">{t.profile.hint}</p>
         </div>
 
-        <Link to="/" className="back-link">
-          ← Vissza a főoldalra
+        <Link to={path('home')} className="back-link">
+          {t.common.backToHome}
         </Link>
       </div>
     </main>

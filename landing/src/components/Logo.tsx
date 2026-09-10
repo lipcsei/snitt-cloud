@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useT } from '../i18n';
 
 type Props = { size?: number; className?: string };
 
@@ -8,6 +9,7 @@ type Props = { size?: number; className?: string };
  * különben több logó egy oldalon összeakadna.
  */
 export default function Logo({ size = 32, className }: Props) {
+  const t = useT();
   const id = useId().replace(/:/g, '');
   const grad = `snitt-grad-${id}`;
   const top = `snitt-top-${id}`;
@@ -20,7 +22,7 @@ export default function Logo({ size = 32, className }: Props) {
       viewBox="0 0 64 64"
       className={className}
       role="img"
-      aria-label="Snitt logó"
+      aria-label={t.header.logoAlt}
     >
       <defs>
         <linearGradient id={grad} x1="0" y1="0" x2="1" y2="1">

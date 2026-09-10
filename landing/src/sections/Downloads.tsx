@@ -1,26 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useNotYet } from '../NotYetProvider';
+import { fill, useI18n } from '../i18n';
+import Rich from '../i18n/Rich';
 
-const PLATFORMS = [
-  {
-    id: 'windows',
-    name: 'Windows',
-    detail: 'Windows 10 vagy újabb · 64 bites',
-    file: '.exe telepítő',
-  },
-  {
-    id: 'macos',
-    name: 'macOS',
-    detail: 'macOS 12 vagy újabb · Apple Silicon és Intel',
-    file: '.dmg lemezkép',
-  },
-  {
-    id: 'linux',
-    name: 'Linux',
-    detail: 'x86_64 · GTK/WebKit2GTK környezet',
-    file: '.AppImage / .deb',
-  },
-];
+/** A platformok sorrendje kötött: az ikonok a nyelvi tábla elemeihez tartoznak. */
+const PLATFORM_IDS = ['windows', 'macos', 'linux'];
 
 function PlatformMark({ id }: { id: string }) {
   if (id === 'windows') {
@@ -55,23 +39,22 @@ function PlatformMark({ id }: { id: string }) {
 
 export default function Downloads() {
   const showNotYet = useNotYet();
+  const { t, path } = useI18n();
 
   return (
-    <section id="letoltes" className="section">
+    <section id={t.sections.downloads} className="section">
       <div className="container">
         <header className="section-head">
-          <span className="eyebrow">Letöltés</span>
-          <h2>Töltsd le, és mutasd meg neki a videóid mappáját</h2>
-          <p className="section-sub">
-            A kiadások a GitHubon érhetők el. Válaszd ki a rendszeredhez tartozó csomagot.
-          </p>
+          <span className="eyebrow">{t.downloads.eyebrow}</span>
+          <h2>{t.downloads.title}</h2>
+          <p className="section-sub">{t.downloads.sub}</p>
         </header>
 
         <div className="platforms">
-          {PLATFORMS.map((p) => (
-            <article key={p.id} className="platform">
+          {t.downloads.platforms.map((p, i) => (
+            <article key={p.name} className="platform">
               <span className="platform-mark" aria-hidden="true">
-                <PlatformMark id={p.id} />
+                <PlatformMark id={PLATFORM_IDS[i]} />
               </span>
               <h3>{p.name}</h3>
               <p className="platform-detail">{p.detail}</p>
@@ -81,36 +64,30 @@ export default function Downloads() {
                 className="btn btn-primary btn-block"
                 onClick={() => showNotYet('download')}
               >
-                Letöltés — {p.name}
+                {fill(t.downloads.cta, { os: p.name })}
               </button>
             </article>
           ))}
         </div>
 
         <aside className="notice">
-          <h3>Mire van szükség a gépeden?</h3>
+          <h3>{t.downloads.notice.title}</h3>
           <p>
-            A Snitt három külső eszközre támaszkodik, és ezeket <strong>nem</strong> csomagolja
-            magába — külön kell telepítened őket:
+            <Rich text={t.downloads.notice.body} />
           </p>
           <ul className="notice-list">
-            <li>
-              <code>ffmpeg</code> — a videók vágásához és a hangsáv kinyeréséhez.
-            </li>
-            <li>
-              <code>yt-dlp</code> — ha linkről szeretnél videót behozni.
-            </li>
-            <li>
-              <code>faster-whisper</code> — ha beszédfelismeréssel is szeretnél átiratot készíteni.
-            </li>
+            {t.downloads.notice.items.map((item) => (
+              <li key={item}>
+                <Rich text={item} />
+              </li>
+            ))}
           </ul>
           <p className="notice-foot">
-            Ha csak meglévő feliratokban keresel a saját fájljaid között, elég az <code>ffmpeg</code>
-            . A többi akkor kell, amikor tényleg használod őket.
+            <Rich text={t.downloads.notice.foot} />
           </p>
           <p className="notice-cta">
-            <Link className="btn btn-outline" to="/telepites">
-              Telepítési útmutató rendszerenként →
+            <Link className="btn btn-outline" to={path('install')}>
+              {t.downloads.notice.cta}
             </Link>
           </p>
         </aside>

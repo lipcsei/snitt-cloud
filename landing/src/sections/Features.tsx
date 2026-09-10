@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useT } from '../i18n';
 
 const S = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
@@ -46,57 +47,27 @@ const icons: Record<string, ReactNode> = {
   ),
 };
 
-const FEATURES = [
-  {
-    icon: 'quote',
-    title: 'Keresés idézetre',
-    body: 'Nem a fájlnévre, nem a címkékre: arra keresel, ami elhangzik. Beírod a mondatot, és megkapod a filmet meg a másodpercet, ahol elhangzik.',
-  },
-  {
-    icon: 'subs',
-    title: 'Több felirat egy filmhez',
-    body: 'Egy filmhez gyakran több felirat is tartozik — más fordítások, más nyelvek, és nem ugyanazt írják. A Snitt mindet megtartja egymás mellett, és mindegyikben keres.',
-  },
-  {
-    icon: 'mic',
-    title: 'Whisper átirat a hangból',
-    body: 'Ha nincs felirat, vagy nem bízol benne, a Whisper beszédfelismerés legenerálja az átiratot magából a hangsávból. Így azt kapod, ami tényleg elhangzott, nem a fordító változatát.',
-  },
-  {
-    icon: 'brain',
-    title: 'Jelentés szerinti keresés',
-    body: 'Ritkán emlékszünk pontosan. A hibrid keresés a teljes szöveges találatok mellé a jelentés alapján hasonló mondatokat is behozza, így a körülírás is elég.',
-  },
-  {
-    icon: 'cut',
-    title: 'Vizuális klipvágó',
-    body: 'A találatból az átirat alapján rögtön javasol egy tartományt, amit az idővonalon húzással igazítasz. A kimenet egy videófájl, amit oda mentesz, ahová akarsz.',
-  },
-  {
-    icon: 'lock',
-    title: 'Minden helyben marad',
-    body: 'Nincs szerver, nincs feltöltés, nincs fiókkényszer. Az index egyetlen SQLite fájl a gépeden, a videóid pedig ott maradnak, ahol eddig is voltak.',
-  },
-];
+/** A kártyák sorrendje kötött: az ikonok a nyelvi tábla elemeihez tartoznak. */
+const ICON_ORDER = ['quote', 'subs', 'mic', 'brain', 'cut', 'lock'];
 
 export default function Features() {
+  const t = useT();
+
   return (
-    <section id="funkciok" className="section section-alt">
+    <section id={t.sections.features} className="section section-alt">
       <div className="container">
         <header className="section-head">
-          <span className="eyebrow">Funkciók</span>
-          <h2>Amit egy videótár keresője tud, ha komolyan gondolják</h2>
-          <p className="section-sub">
-            A Snitt a saját gyűjteményedhez készült: sok fájl, sok nyelv, kevés rendszerezés.
-          </p>
+          <span className="eyebrow">{t.features.eyebrow}</span>
+          <h2>{t.features.title}</h2>
+          <p className="section-sub">{t.features.sub}</p>
         </header>
 
         <div className="cards">
-          {FEATURES.map((f) => (
+          {t.features.items.map((f, i) => (
             <article key={f.title} className="card">
               <span className="card-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
-                  {icons[f.icon]}
+                  {icons[ICON_ORDER[i]]}
                 </svg>
               </span>
               <h3>{f.title}</h3>

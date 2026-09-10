@@ -1,153 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useT } from '../i18n';
 
-type Hit = {
-  id: string;
-  /** Film címe + évszám — sima szöveges forrásmegjelölés, sehol nincs plakát vagy logó. */
-  title: string;
-  /** Melyik átiratból jött a találat (felirat vagy Whisper, és milyen nyelven). */
-  source: string;
-  time: string;
-  /** A sor idézőjelei nyelvfüggők: magyar „…”, angol "…". */
-  quotes: 'hu' | 'en';
-  before: string;
-  hit: string;
-  after: string;
-  score: string;
-  /** Jelentés szerinti (szemantikus) találat: a kérdés magyar volt, a sor angol. */
-  semantic?: boolean;
-  active?: boolean;
-};
-
-type Scene = {
-  id: string;
-  query: string;
-  stats: string;
-  hits: Hit[];
-  cut: {
-    range: string;
-    file: string;
-    /** A kijelölés helye a sávon, százalékban. */
-    left: number;
-    width: number;
-    playhead: number;
-  };
-};
-
-const SCENES: Scene[] = [
-  {
-    id: 'lotr',
-    query: 'nem mehetsz át',
-    stats: '2 találat · 0,3 mp',
-    hits: [
-      {
-        id: 'lotr-hu',
-        title: 'A Gyűrűk Ura: A Gyűrű Szövetsége (2001)',
-        source: 'magyar felirat',
-        time: '02:31:05',
-        quotes: 'hu',
-        before: '',
-        hit: 'Nem mehetsz át!',
-        after: '',
-        score: '98%',
-        active: true,
-      },
-      {
-        id: 'lotr-en',
-        title: 'A Gyűrűk Ura: A Gyűrű Szövetsége (2001)',
-        source: 'whisper · angol',
-        time: '02:31:04',
-        quotes: 'en',
-        before: 'You shall not ',
-        hit: 'pass',
-        after: '!',
-        score: '91%',
-        semantic: true,
-      },
-    ],
-    cut: {
-      range: '02:31:01 → 02:31:09 · 8,0 mp',
-      file: 'gyuruk-ura_02-31-01.mp4',
-      left: 30,
-      width: 30,
-      playhead: 44,
-    },
-  },
-  {
-    id: 'pulp',
-    query: 'royale sajttal',
-    stats: '2 találat · 0,2 mp',
-    hits: [
-      {
-        id: 'pulp-hu',
-        title: 'Ponyvaregény (1994)',
-        source: 'magyar felirat',
-        time: '00:12:34',
-        quotes: 'hu',
-        before: '',
-        hit: 'Royale sajttal.',
-        after: '',
-        score: '97%',
-        active: true,
-      },
-      {
-        id: 'pulp-en',
-        title: 'Ponyvaregény (1994)',
-        source: 'whisper · angol',
-        time: '00:12:31',
-        quotes: 'en',
-        before: 'They call it a ',
-        hit: 'Royale with cheese',
-        after: '.',
-        score: '89%',
-        semantic: true,
-      },
-    ],
-    cut: {
-      range: '00:12:29 → 00:12:37 · 8,0 mp',
-      file: 'ponyvaregeny_00-12-29.mp4',
-      left: 42,
-      width: 24,
-      playhead: 55,
-    },
-  },
-  {
-    id: 'esb',
-    query: 'én vagyok az apád',
-    stats: '2 találat · 0,3 mp',
-    hits: [
-      {
-        id: 'esb-hu',
-        title: 'Star Wars V. rész — A Birodalom visszavág (1980)',
-        source: 'magyar felirat',
-        time: '01:45:02',
-        quotes: 'hu',
-        before: '',
-        hit: 'Én vagyok az apád.',
-        after: '',
-        score: '99%',
-        active: true,
-      },
-      {
-        id: 'esb-en',
-        title: 'Star Wars V. rész — A Birodalom visszavág (1980)',
-        source: 'whisper · angol',
-        time: '01:45:01',
-        quotes: 'en',
-        before: 'I am your ',
-        hit: 'father',
-        after: '.',
-        score: '92%',
-        semantic: true,
-      },
-    ],
-    cut: {
-      range: '01:44:58 → 01:45:07 · 9,0 mp',
-      file: 'birodalom-visszavag_01-44-58.mp4',
-      left: 22,
-      width: 33,
-      playhead: 38,
-    },
-  },
+/**
+ * A jelenetek szövege a nyelvi táblákban van, a geometria (kijelölés helye a
+ * sávon) viszont nyelvfüggetlen, ezért marad itt - így nem kell kétszer
+ * karbantartani ugyanazokat a számokat.
+ */
+const SCENE_GEOMETRY = [
+  { left: 30, width: 30, playhead: 44 },
+  { left: 42, width: 24, playhead: 55 },
+  { left: 22, width: 33, playhead: 38 },
 ];
 
 const SCENE_MS = 4600;
@@ -174,11 +36,14 @@ function matchReduced(): MediaQueryList | null {
 }
 
 export default function AppPreview() {
+  const t = useT();
   const reduced = usePrefersReducedMotion();
   const [index, setIndex] = useState(0);
   const [fading, setFading] = useState(false);
 
-  const scene = SCENES[index] ?? SCENES[0];
+  const scenes = t.preview.scenes;
+  const scene = scenes[index] ?? scenes[0];
+  const geometry = SCENE_GEOMETRY[index] ?? SCENE_GEOMETRY[0];
 
   // Csökkentett mozgás esetén nincs forgatás: az első jelenet marad állóképként.
   useEffect(() => {
@@ -192,7 +57,7 @@ export default function AppPreview() {
     const tick = window.setInterval(() => {
       setFading(true);
       swap = window.setTimeout(() => {
-        setIndex((i) => (i + 1) % SCENES.length);
+        setIndex((i) => (i + 1) % scenes.length);
         setFading(false);
       }, FADE_MS);
     }, SCENE_MS);
@@ -201,7 +66,7 @@ export default function AppPreview() {
       window.clearInterval(tick);
       window.clearTimeout(swap);
     };
-  }, [reduced]);
+  }, [reduced, scenes.length]);
 
   const typed = useTypedQuery(scene.query, reduced);
 
@@ -211,7 +76,7 @@ export default function AppPreview() {
         <span className="dot dot-r" />
         <span className="dot dot-y" />
         <span className="dot dot-g" />
-        <span className="preview-title">Snitt — Könyvtár: 412 videó · 1 908 átirat</span>
+        <span className="preview-title">{t.preview.windowTitle}</span>
       </div>
 
       <div className="preview-body">
@@ -229,14 +94,14 @@ export default function AppPreview() {
 
         <div className={fading ? 'preview-scene is-fading' : 'preview-scene'}>
           <div className="preview-meta">
-            <span className="chip chip-on">Teljes szöveg + jelentés</span>
-            <span className="chip">Minden nyelv · minden átirat</span>
+            <span className="chip chip-on">{t.preview.chipHybrid}</span>
+            <span className="chip">{t.preview.chipAll}</span>
             <span className="chip">{scene.stats}</span>
           </div>
 
           <ul className="preview-results">
-            {scene.hits.map((r) => (
-              <li key={r.id} className={r.active ? 'result result-active' : 'result'}>
+            {scene.hits.map((r, i) => (
+              <li key={r.time} className={i === 0 ? 'result result-active' : 'result'}>
                 <span className="result-thumb" />
                 <span className="result-main">
                   <span className="result-head">
@@ -251,7 +116,8 @@ export default function AppPreview() {
                       {r.after}
                       {r.quotes === 'hu' ? '”' : '"'}
                     </span>
-                    {r.semantic && <span className="result-badge">jelentés szerint</span>}
+                    {/* A második találat mindig a jelentés szerinti, másik nyelvű sor. */}
+                    {i === 1 && <span className="result-badge">{t.preview.semanticBadge}</span>}
                   </span>
                 </span>
                 <span className="result-side">
@@ -264,7 +130,7 @@ export default function AppPreview() {
 
           <div className="preview-timeline">
             <div className="timeline-head">
-              <span className="timeline-label">Kivágás</span>
+              <span className="timeline-label">{t.preview.cutLabel}</span>
               <span className="timeline-range">{scene.cut.range}</span>
             </div>
             <div className="timeline-track">
@@ -275,16 +141,16 @@ export default function AppPreview() {
               </div>
               <div
                 className="timeline-selection"
-                style={{ left: `${scene.cut.left}%`, width: `${scene.cut.width}%` }}
+                style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }}
               >
                 <span className="handle handle-l" />
                 <span className="handle handle-r" />
               </div>
-              <div className="timeline-playhead" style={{ left: `${scene.cut.playhead}%` }} />
+              <div className="timeline-playhead" style={{ left: `${geometry.playhead}%` }} />
             </div>
             <div className="timeline-actions">
-              <span className="mini-btn mini-btn-primary">Kivágás fájlba</span>
-              <span className="mini-btn mini-btn-ghost">Előnézet</span>
+              <span className="mini-btn mini-btn-primary">{t.preview.cutAction}</span>
+              <span className="mini-btn mini-btn-ghost">{t.preview.previewAction}</span>
               <span className="timeline-out">{scene.cut.file}</span>
             </div>
           </div>

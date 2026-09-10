@@ -286,6 +286,40 @@ a {
   color: var(--text);
 }
 
+/* Nyelvváltó: kis szegmentált kapcsoló, hogy szűk fejlécben se törjön sort. */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.lang-opt {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 640;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.lang-opt:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lang-opt-on {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ---------- hero ---------- */
 
 .hero {
@@ -1291,6 +1325,11 @@ a {
 
   .user-name {
     max-width: 96px;
+  }
+
+  .lang-opt {
+    padding: 4px 8px;
+    font-size: 0.74rem;
   }
 
   .hero-cta .btn {

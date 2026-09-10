@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n';
+import Rich from '../i18n/Rich';
+import type { InstallGuide, Strings } from '../i18n/types';
 import '../styles.install.css';
 
 type OsId = 'windows' | 'macos' | 'linux';
@@ -10,6 +13,40 @@ const OS_LIST: { id: OsId; label: string }[] = [
   { id: 'macos', label: 'macOS' },
   { id: 'linux', label: 'Linux' },
 ];
+
+/**
+ * A parancsok nyelvfüggetlenek, ezért nem a szövegtáblákban vannak: minden
+ * lépéshez az ott megjelenő parancsblokkok tartoznak, sorrendben. A figyelmeztető
+ * doboz helye rendszerenként más (Linuxon az első lépés után jön).
+ */
+const OS_COMMANDS: Record<OsId, { steps: string[][]; warn?: string; warnAfter?: number }> = {
+  windows: {
+    steps: [
+      ['winget install Gyan.FFmpeg\nwinget install yt-dlp.yt-dlp'],
+      ['winget install Python.Python.3.12', 'pip install faster-whisper-cli'],
+      ['choco install ffmpeg yt-dlp python'],
+    ],
+  },
+  macos: {
+    steps: [
+      ['brew install ffmpeg yt-dlp'],
+      ['brew install pipx && pipx ensurepath\npipx install faster-whisper-cli'],
+    ],
+    warn: 'export PATH="$HOME/Library/Python/3.9/bin:$PATH"',
+  },
+  linux: {
+    steps: [
+      ['sudo apt install ffmpeg pipx\npipx install faster-whisper-cli'],
+      ['sudo dnf install ffmpeg yt-dlp pipx'],
+      ['sudo pacman -S ffmpeg yt-dlp python-pipx'],
+    ],
+    warn:
+      'sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp\nsudo chmod a+rx /usr/local/bin/yt-dlp',
+    warnAfter: 1,
+  },
+};
+
+const CHECK_COMMANDS = 'ffmpeg -version\nyt-dlp --version\nfaster-whisper --help';
 
 // Csak a kezdő fület találjuk ki belőle; mindhárom rendszer kézzel is elérhető marad,
 // tehát a téves tipp legrosszabb esetben egy kattintás.
@@ -24,7 +61,8 @@ function detectOs(): OsId {
 
 type CopyState = 'idle' | 'ok' | 'err';
 
-function CodeBlock({ code, label = 'Terminál' }: { code: string; label?: string }) {
+function CodeBlock({ code, label }: { code: string; label?: string }) {
+  const t = useI18n().t;
   const [state, setState] = useState<CopyState>('idle');
   const timer = useRef<number | undefined>(undefined);
 
@@ -45,9 +83,9 @@ function CodeBlock({ code, label = 'Terminál' }: { code: string; label?: string
   return (
     <div className="code-block">
       <div className="code-head">
-        <span className="code-label">{label}</span>
+        <span className="code-label">{label ?? t.install.codeLabel}</span>
         <button type="button" className="code-copy" onClick={copy}>
-          {state === 'ok' ? 'Másolva' : state === 'err' ? 'Nem sikerült' : 'Másolás'}
+          {state === 'ok' ? t.install.copied : state === 'err' ? t.install.copyFailed : t.install.copy}
         </button>
       </div>
       <pre>
@@ -57,167 +95,56 @@ function CodeBlock({ code, label = 'Terminál' }: { code: string; label?: string
   );
 }
 
-function WindowsGuide() {
+function Warning({ warn, code }: { warn: InstallGuide['warn']; code?: string }) {
   return (
-    <>
-      <section className="install-step">
-        <h3>1. Telepítés wingettel</h3>
+    <aside className="install-warn">
+      <h3>{warn.title}</h3>
+      <p>
+        <Rich text={warn.body} />
+      </p>
+      {code && <CodeBlock code={code} label={warn.codeLabel} />}
+      {warn.after && (
         <p>
-          A <code>winget</code> a Windows 10 és 11 része, külön telepíteni nem kell. Nyiss egy
-          PowerShell ablakot, és futtasd a szükséges sorokat.
+          <Rich text={warn.after} />
         </p>
-        <CodeBlock
-          label="PowerShell"
-          code={'winget install Gyan.FFmpeg\nwinget install yt-dlp.yt-dlp'}
-        />
-        <p className="install-hint">
-          Az első sor kell mindenhez. A második csak akkor, ha linkről is szeretnél videót behozni.
-        </p>
-      </section>
-
-      <section className="install-step">
-        <h3>2. Beszédfelismerés (opcionális)</h3>
-        <p>
-          Ez a rész csak akkor kell, ha felirat nélküli videókhoz is szeretnél átiratot. Először
-          Python kell hozzá, utána maga a csomag.
-        </p>
-        <CodeBlock label="PowerShell" code={'winget install Python.Python.3.12'} />
-        <p className="install-hint">
-          A Python telepítése után <strong>nyiss egy új PowerShell ablakot</strong>, különben a{' '}
-          <code>pip</code> parancsot még nem találja meg a rendszer.
-        </p>
-        <CodeBlock label="Új PowerShell ablak" code={'pip install faster-whisper-cli'} />
-      </section>
-
-      <section className="install-step">
-        <h3>Alternatíva: Chocolatey</h3>
-        <p>
-          Ha Chocolateyt használsz, egy sorral is megvan az <code>ffmpeg</code>, a{' '}
-          <code>yt-dlp</code> és a Python:
-        </p>
-        <CodeBlock label="PowerShell (rendszergazda)" code={'choco install ffmpeg yt-dlp python'} />
-      </section>
-
-      <aside className="install-warn">
-        <h3>Telepítés után nyiss új terminált</h3>
-        <p>
-          A telepítők a PATH-ot módosítják, a már futó programok viszont a régi PATH-ot látják. Ha a
-          telepítés után az <code>ffmpeg -version</code> még mindig azt írja, hogy nem található,
-          nyiss egy új terminálablakot — ha pedig a Snitt közben nyitva volt, indítsd újra. Ez a
-          leggyakoribb elakadás Windowson, és nem a telepítéssel van baj.
-        </p>
-      </aside>
-    </>
+      )}
+    </aside>
   );
 }
 
-function MacGuide() {
+function Guide({ os, strings }: { os: OsId; strings: Strings }) {
+  const guide = strings.install[os];
+  const { steps, warn, warnAfter } = OS_COMMANDS[os];
+
   return (
     <>
-      <section className="install-step">
-        <h3>1. Homebrew</h3>
-        <p>
-          macOS-en a legrövidebb út a{' '}
-          <a href="https://brew.sh" target="_blank" rel="noreferrer noopener">
-            Homebrew
-          </a>
-          . Ha még nincs fent, a telepítőparancsot a brew.sh kezdőlapján találod. Ha már megvan,
-          ugorj a következő sorra.
-        </p>
-        <CodeBlock code={'brew install ffmpeg yt-dlp'} />
-        <p className="install-hint">
-          Az <code>ffmpeg</code> kell mindenhez, a <code>yt-dlp</code> csak a linkről importáláshoz.
-        </p>
-      </section>
-
-      <section className="install-step">
-        <h3>2. Beszédfelismerés (opcionális)</h3>
-        <p>
-          A legtisztább megoldás a <code>pipx</code>: külön környezetbe teszi a Python-eszközöket, és
-          gondoskodik róla, hogy a parancs a PATH-ra kerüljön.
-        </p>
-        <CodeBlock
-          code={'brew install pipx && pipx ensurepath\npipx install faster-whisper-cli'}
-        />
-        <p className="install-hint">
-          A <code>pipx ensurepath</code> a shell profilodat írja át, tehát utána nyiss egy új
-          terminált.
-        </p>
-      </section>
-
-      <aside className="install-warn">
-        <h3>Ha pipx nélkül telepíted</h3>
-        <p>
-          A <code>pip3 install --user faster-whisper-cli</code> is működik, de a parancsot a{' '}
-          <code>~/Library/Python/3.x/bin</code> könyvtárba teszi, ami alapból{' '}
-          <strong>nincs rajta a PATH-on</strong>. Ilyenkor a telepítés sikerül, a Snitt viszont nem
-          fogja megtalálni a <code>faster-whisper</code> parancsot. Vedd fel a könyvtárat a shell
-          profilodba (<code>~/.zshrc</code>):
-        </p>
-        <CodeBlock label="~/.zshrc" code={'export PATH="$HOME/Library/Python/3.9/bin:$PATH"'} />
-        <p>
-          A verziószámnak egyeznie kell a saját Pythonodéval — nézd meg a{' '}
-          <code>python3 --version</code> kimenetét, és azt írd be a <code>3.9</code> helyére,
-          különben a sor nem csinál semmit.
-        </p>
-      </aside>
+      {guide.steps.map((step, i) => (
+        <div key={step.title}>
+          <section className="install-step">
+            <h3>{step.title}</h3>
+            {step.body && (
+              <p>
+                <Rich text={step.body} />
+              </p>
+            )}
+            {steps[i]?.[0] && <CodeBlock code={steps[i][0]} label={step.codeLabel} />}
+            {step.hint && (
+              <p className="install-hint">
+                <Rich text={step.hint} />
+              </p>
+            )}
+            {steps[i]?.[1] && <CodeBlock code={steps[i][1]} label={step.codeLabel2} />}
+          </section>
+          {warnAfter === i + 1 && <Warning warn={guide.warn} code={warn} />}
+        </div>
+      ))}
+      {warnAfter === undefined && <Warning warn={guide.warn} code={warn} />}
     </>
   );
 }
-
-function LinuxGuide() {
-  return (
-    <>
-      <section className="install-step">
-        <h3>Debian / Ubuntu</h3>
-        <CodeBlock code={'sudo apt install ffmpeg pipx\npipx install faster-whisper-cli'} />
-        <p className="install-hint">
-          A második sor csak akkor kell, ha beszédfelismerést is szeretnél. A{' '}
-          <code>pipx ensurepath</code> után nyiss új terminált.
-        </p>
-      </section>
-
-      <aside className="install-warn">
-        <h3>yt-dlp: kerüld a disztribúciós csomagot</h3>
-        <p>
-          A tárolókban lévő <code>yt-dlp</code> jellemzően elavult, a videómegosztók pedig gyakran
-          változnak — egy régi verzió hetek alatt használhatatlanná válik. Töltsd le inkább a
-          hivatalos binárist, ez frissíti magát:
-        </p>
-        <CodeBlock
-          code={
-            'sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp\nsudo chmod a+rx /usr/local/bin/yt-dlp'
-          }
-        />
-      </aside>
-
-      <section className="install-step">
-        <h3>Fedora</h3>
-        <CodeBlock code={'sudo dnf install ffmpeg yt-dlp pipx'} />
-        <p className="install-hint">
-          Az <code>ffmpeg</code> nincs benne a Fedora alap tárolóiban: ehhez előbb engedélyezned kell
-          az RPM Fusion tárolót, különben a parancs nem találja a csomagot.
-        </p>
-      </section>
-
-      <section className="install-step">
-        <h3>Arch</h3>
-        <CodeBlock code={'sudo pacman -S ffmpeg yt-dlp python-pipx'} />
-        <p className="install-hint">
-          A Whisper ezután <code>pipx install faster-whisper-cli</code> paranccsal jön.
-        </p>
-      </section>
-    </>
-  );
-}
-
-const GUIDES: Record<OsId, () => JSX.Element> = {
-  windows: WindowsGuide,
-  macos: MacGuide,
-  linux: LinuxGuide,
-};
 
 export default function Install() {
+  const { t, path } = useI18n();
   const [os, setOs] = useState<OsId>(detectOs);
   const tabRefs = useRef<Partial<Record<OsId, HTMLButtonElement | null>>>({});
 
@@ -242,59 +169,42 @@ export default function Install() {
     tabRefs.current[id]?.focus();
   }
 
-  const Guide = GUIDES[os];
-
   return (
     <main className="page install-page">
       <div className="container container-narrow">
-        <span className="eyebrow">Telepítés</span>
-        <h1>Külső eszközök telepítése</h1>
-        <p className="install-lead">
-          A Snitt három parancssori eszközre támaszkodik, és ezeket szándékosan nem csomagolja
-          magába: a gépeden lévő, saját verziójú programokat használja. Ez az oldal végigvezet a
-          telepítésükön, rendszerenként.
-        </p>
+        <span className="eyebrow">{t.install.eyebrow}</span>
+        <h1>{t.install.title}</h1>
+        <p className="install-lead">{t.install.lead}</p>
 
         <aside className="install-callout">
-          <h2>Mennyi kell ebből tényleg?</h2>
+          <h2>{t.install.callout.title}</h2>
           <p>
-            Ha csak a videóid mellett lévő feliratfájlokban és a videókba ágyazott feliratsávokban
-            keresel, <strong>elég az ffmpeg</strong>. A másik kettő nem előfeltétel: akkor kell
-            telepítened őket, amikor először használnád azt a funkciót.
+            <Rich text={t.install.callout.body} />
           </p>
         </aside>
 
         <ul className="dep-list">
-          <li className="dep">
-            <div className="dep-head">
-              <code>ffmpeg</code>
-              <span className="dep-tag dep-tag-req">Kötelező</span>
-            </div>
-            <p>
-              Klipek vágása, hangsáv kinyerése, a videóba ágyazott feliratsávok kiolvasása.
-              Gyakorlatilag minden művelethez kell.
-            </p>
-          </li>
-          <li className="dep">
-            <div className="dep-head">
-              <code>yt-dlp</code>
-              <span className="dep-tag">Opcionális</span>
-            </div>
-            <p>Csak akkor, ha linkről szeretnél videót behozni a tárba.</p>
-          </li>
-          <li className="dep">
-            <div className="dep-head">
-              <code>faster-whisper</code>
-              <span className="dep-tag">Opcionális</span>
-            </div>
-            <p>
-              Csak akkor, ha beszédfelismeréssel is szeretnél átiratot készíteni. A parancsot a{' '}
-              <code>faster-whisper-cli</code> Python-csomag telepíti.
-            </p>
-          </li>
+          {t.install.deps.map((dep, i) => (
+            <li key={dep.name} className="dep">
+              <div className="dep-head">
+                <code>{dep.name}</code>
+                <span className={i === 0 ? 'dep-tag dep-tag-req' : 'dep-tag'}>
+                  {i === 0 ? t.install.tagRequired : t.install.tagOptional}
+                </span>
+              </div>
+              <p>
+                <Rich text={dep.body} />
+              </p>
+            </li>
+          ))}
         </ul>
 
-        <div className="os-tabs" role="tablist" aria-label="Operációs rendszer" onKeyDown={onTabKeyDown}>
+        <div
+          className="os-tabs"
+          role="tablist"
+          aria-label={t.install.tabsAria}
+          onKeyDown={onTabKeyDown}
+        >
           {OS_LIST.map((item) => (
             <button
               key={item.id}
@@ -322,69 +232,41 @@ export default function Install() {
           aria-labelledby={`os-tab-${os}`}
           tabIndex={0}
         >
-          <Guide />
+          <Guide os={os} strings={t} />
         </div>
 
         <section className="install-step install-check">
-          <h2>Ellenőrzés</h2>
-          <p>
-            Nyiss egy terminált, és futtasd le azt a sort, amelyik eszközt telepítetted. Ha ezek
-            kiírnak valamit, a Snitt is meg fogja találni őket — ugyanazon a PATH-on keresi.
-          </p>
-          <CodeBlock code={'ffmpeg -version\nyt-dlp --version\nfaster-whisper --help'} />
+          <h2>{t.install.check.title}</h2>
+          <p>{t.install.check.body}</p>
+          <CodeBlock code={CHECK_COMMANDS} />
         </section>
 
         <section className="install-step">
-          <h2>Ha valami mégsincs a PATH-on</h2>
-          <p>
-            Előfordul, hogy egy eszköz olyan helyre kerül, ahonnan a rendszer nem látja — vagy
-            szándékosan máshol tartod. Ilyenkor nem kell a PATH-tal küzdeni: add meg a teljes
-            elérési utat a megfelelő környezeti változóban, és a Snitt azt fogja használni.
-          </p>
+          <h2>{t.install.path.title}</h2>
+          <p>{t.install.path.body}</p>
           <ul className="env-list">
-            <li>
-              <code>FFMPEG_BIN</code>
-              <span>az ffmpeg futtatható fájlja</span>
-            </li>
-            <li>
-              <code>FFPROBE_BIN</code>
-              <span>az ffprobe futtatható fájlja (az ffmpeg mellett érkezik)</span>
-            </li>
-            <li>
-              <code>YTDLP_BIN</code>
-              <span>a yt-dlp futtatható fájlja</span>
-            </li>
-            <li>
-              <code>WHISPER_BIN</code>
-              <span>a faster-whisper parancs</span>
-            </li>
+            {t.install.path.vars.map((item) => (
+              <li key={item.name}>
+                <code>{item.name}</code>
+                <span>{item.body}</span>
+              </li>
+            ))}
           </ul>
         </section>
 
         <section className="install-step">
-          <h2>Jó tudni</h2>
+          <h2>{t.install.good.title}</h2>
           <ul className="know-list">
-            <li>
-              <strong>A Whisper modell az első használatkor töltődik le.</strong> Mérettől függően
-              néhány száz megabájttól nagyjából 3 gigabájtig terjed, tehát az első átirat előtt
-              érdemes rendes netre és szabad helyre számítani. Utána már helyben van.
-            </li>
-            <li>
-              <strong>A modellt a <code>WHISPER_MODEL</code> környezeti változó választja ki.</strong>{' '}
-              Lehetséges értékek: <code>tiny</code>, <code>base</code>, <code>small</code>,{' '}
-              <code>medium</code>, <code>large-v3</code>. A <code>small</code> jó alapértelmezés; a{' '}
-              <code>large-v3</code> sokkal pontosabb, de CPU-n lassú.
-            </li>
-            <li>
-              <strong>Egy egész estés film átirata CPU-n sokáig tart</strong> — nagy modellel akár
-              órákig. A folyamat a háttérben fut, közben nyugodtan használhatod az alkalmazást és
-              kereshetsz a már kész átiratokban.
-            </li>
+            {t.install.good.items.map((item) => (
+              <li key={item}>
+                <Rich text={item} />
+              </li>
+            ))}
           </ul>
         </section>
 
-        <Link to="/#letoltes" className="back-link">
-          ← Vissza a letöltéshez
+        <Link to={`${path('home')}#${t.sections.downloads}`} className="back-link">
+          {t.common.backToDownloads}
         </Link>
       </div>
     </main>

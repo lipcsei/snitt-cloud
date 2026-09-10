@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useT } from '../i18n';
 import '../styles.notyet.css';
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
  */
 export default function NotYetModal({ kind, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const t = useT();
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -36,21 +38,19 @@ export default function NotYetModal({ kind, onClose }: Props) {
         aria-labelledby="notyet-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <EntIllustration />
+        <EntIllustration alt={t.notYet.artAlt} />
 
         <blockquote className="notyet-quote" id="notyet-title">
-          „Ne legyetek hamariak!"
-          <cite>Szirszakáll — A Gyűrűk Ura: A két torony</cite>
+          {t.notYet.quote}
+          <cite>{t.notYet.cite}</cite>
         </blockquote>
 
         <p className="notyet-body">
-          {kind === 'download'
-            ? 'A Snitt még készül: a telepítők hamarosan letölthetők lesznek. Addig is a forráskód nyilvános, és magadnak is lefordíthatod.'
-            : 'A regisztráció még nem él - a fiókok a későbbi Pro funkciókhoz kellenek majd. Az alkalmazás fiók nélkül is teljes értékű lesz.'}
+          {kind === 'download' ? t.notYet.download : t.notYet.register}
         </p>
 
         <button ref={closeRef} type="button" className="notyet-close" onClick={onClose}>
-          Türelmes leszek
+          {t.notYet.close}
         </button>
       </div>
     </div>
@@ -58,9 +58,9 @@ export default function NotYetModal({ kind, onClose }: Props) {
 }
 
 /** Saját rajz: egy fás-szakállas figura, nem a filmbeli karakter másolata. */
-function EntIllustration() {
+function EntIllustration({ alt }: { alt: string }) {
   return (
-    <svg className="notyet-art" viewBox="0 0 200 150" role="img" aria-label="Öreg fa illusztráció">
+    <svg className="notyet-art" viewBox="0 0 200 150" role="img" aria-label={alt}>
       <defs>
         <linearGradient id="notyet-bark" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#6b5842" />

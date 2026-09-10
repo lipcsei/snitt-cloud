@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   AUTH_INIT_TIMEOUT_MS,
   accountConsoleUrl,
@@ -16,6 +17,7 @@ import {
   readProfile,
   type Profile,
 } from './auth';
+import { PATHS, absoluteUrl, langFromPathname } from './i18n';
 
 export type AuthState = {
   /** false, amíg a check-sso fut; utána akkor is true, ha a Keycloak nem élt. */
@@ -76,17 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const home = `${window.location.origin}/`;
+  // A Keycloak felülete is azon a nyelven jöjjön, amelyiken a látogató épp olvas.
+  const lang = langFromPathname(useLocation().pathname);
+  const home = absoluteUrl(PATHS[lang].home);
   // Bejelentkezés után arra az oldalra jövünk vissza, ahonnan indult (pl. /profil).
   const here = window.location.href;
 
   const login = useCallback(() => {
-    safely(() => keycloak.login({ redirectUri: here, locale: 'hu' }));
-  }, [here]);
+    safely(() => keycloak.login({ redirectUri: here, locale: lang }));
+  }, [here, lang]);
 
   const register = useCallback(() => {
-    safely(() => keycloak.register({ redirectUri: here, locale: 'hu' }));
-  }, [here]);
+    safely(() => keycloak.register({ redirectUri: here, locale: lang }));
+  }, [here, lang]);
 
   const logout = useCallback(() => {
     safely(() => keycloak.logout({ redirectUri: home }));

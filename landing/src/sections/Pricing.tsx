@@ -1,4 +1,6 @@
 import { useAuth } from '../AuthProvider';
+import { useT } from '../i18n';
+import Rich from '../i18n/Rich';
 import '../styles.pricing.css';
 
 /**
@@ -7,73 +9,55 @@ import '../styles.pricing.css';
  */
 export default function Pricing() {
   const { authenticated, register, ready } = useAuth();
+  const t = useT();
 
   return (
-    <section className="pricing" id="arak">
+    <section className="pricing" id={t.sections.pricing}>
       <div className="pricing-inner">
-        <h2>Mi ingyenes, és miért van fizetős rész?</h2>
-        <p className="pricing-lead">
-          A keresés és a kivágás ingyenes marad - ez a gépeden fut, nekünk nem kerül pénzbe. Az
-          AI-alapú funkciók viszont valódi tokenköltséget jelentenek, ezért csak előfizetéssel
-          érhetők el. Nincs benne trükk.
-        </p>
+        <h2>{t.pricing.title}</h2>
+        <p className="pricing-lead">{t.pricing.lead}</p>
 
         <div className="pricing-tiers">
           <article className="tier">
             <header>
-              <h3>Ingyenes</h3>
+              <h3>{t.pricing.free.name}</h3>
               <p className="tier-price">
-                0 Ft <span>örökre</span>
+                {t.pricing.free.price} <span>{t.pricing.free.priceNote}</span>
               </p>
             </header>
             <ul>
-              <li>Korlátlan videó és leirat a saját gépeden</li>
-              <li>Idézet-alapú keresés az összes feliratban</li>
-              <li>Whisper átirat a tényleges hangsávból</li>
-              <li>Több nyelvű leiratok filmenként</li>
-              <li>Klipvágás fájlba, kézzel állítható tartománnyal</li>
+              {t.pricing.free.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
-            <p className="tier-note">
-              Egy kivágás egy rövid hirdetés megtekintésével jár - ebből tartjuk fenn a fejlesztést.
-            </p>
+            <p className="tier-note">{t.pricing.free.note}</p>
           </article>
 
           <article className="tier tier-pro">
-            <span className="tier-flag">Előfizetés</span>
+            <span className="tier-flag">{t.pricing.pro.flag}</span>
             <header>
-              <h3>Pro</h3>
+              <h3>{t.pricing.pro.name}</h3>
               <p className="tier-price">
-                hamarosan <span>havidíjas</span>
+                {t.pricing.pro.price} <span>{t.pricing.pro.priceNote}</span>
               </p>
             </header>
             <ul>
-              <li>
-                <strong>AI-keresés:</strong> nem csak a szavakat találja meg, hanem a jelenetet is,
-                amire gondolsz - körülírásból is
-              </li>
-              <li>
-                <strong>Videóértelmezés:</strong> mi történik a jelenetben, kik szerepelnek benne,
-                miről szól a párbeszéd
-              </li>
-              <li>Kérdezhetsz a videótáradtól, nem csak kereshetsz benne</li>
-              <li>Nincsenek hirdetések</li>
+              {t.pricing.pro.items.map((item) => (
+                <li key={item}>
+                  <Rich text={item} />
+                </li>
+              ))}
             </ul>
-            <p className="tier-note">
-              Ezek a funkciók külső AI-modelleket használnak, ami tokenenként fizetendő - ezért nem
-              fér bele az ingyenes csomagba. Az árazás a bevezetéskor lesz végleges.
-            </p>
+            <p className="tier-note">{t.pricing.pro.note}</p>
             {ready && !authenticated && (
               <button type="button" className="tier-cta" onClick={register}>
-                Regisztrálok, szóljatok, ha indul
+                {t.pricing.pro.cta}
               </button>
             )}
           </article>
         </div>
 
-        <p className="pricing-footnote">
-          Az alkalmazás fiók nélkül is teljes értékű. A regisztráció csak a Pro funkciókhoz kell -
-          a videóid akkor sem kerülnek fel sehova.
-        </p>
+        <p className="pricing-footnote">{t.pricing.footnote}</p>
       </div>
     </section>
   );

@@ -1,10 +1,13 @@
 import { useAuth } from '../AuthProvider';
 import AppPreview from '../components/AppPreview';
 import { useNotYet } from '../NotYetProvider';
+import { useT } from '../i18n';
+import Rich from '../i18n/Rich';
 
 export default function Hero() {
   const { authenticated } = useAuth();
   const showNotYet = useNotYet();
+  const t = useT();
 
   return (
     <section className="hero">
@@ -12,19 +15,14 @@ export default function Hero() {
         <div className="hero-copy">
           <span className="pill">
             <span className="pill-dot" />
-            Asztali alkalmazás · Windows · macOS · Linux
+            {t.hero.pill}
           </span>
 
           <h1>
-            Megvan a mondat.
-            <br />
-            Csak azt nem tudod, <em>melyik filmben</em>.
+            <Rich text={t.hero.title} />
           </h1>
 
-          <p className="lead">
-            A Snitt átiratot készít a videótáradról, és megkeresi benne a beírt idézetet — egy
-            kétórás filmben másodpercek alatt. Aztán ki is vágja neked azt a jelenetet.
-          </p>
+          <p className="lead">{t.hero.lead}</p>
 
           <div className="hero-cta">
             <button
@@ -32,7 +30,7 @@ export default function Hero() {
               className="btn btn-primary btn-lg"
               onClick={() => showNotYet('download')}
             >
-              Letöltés
+              {t.hero.download}
             </button>
             {!authenticated && (
               <button
@@ -40,15 +38,15 @@ export default function Hero() {
                 className="btn btn-outline btn-lg"
                 onClick={() => showNotYet('register')}
               >
-                Regisztráció
+                {t.hero.register}
               </button>
             )}
           </div>
 
           <ul className="hero-facts">
-            <li>Nincs feltöltés, nincs felhő</li>
-            <li>Egy SQLite fájl a saját gépeden</li>
-            <li>Fiók nélkül is teljes értékű</li>
+            {t.hero.facts.map((fact) => (
+              <li key={fact}>{fact}</li>
+            ))}
           </ul>
         </div>
 
