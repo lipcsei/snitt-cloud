@@ -77,6 +77,12 @@
   color: #ffa8bf;
 }
 
+/* Amit az alkalmazás maga tölt le: ez jó hír, ne piros legyen. */
+.dep-tag-auto {
+  border-color: rgba(70, 211, 154, 0.34);
+  color: #8ce8c2;
+}
+
 .dep p {
   color: var(--muted);
   font-size: 0.94rem;

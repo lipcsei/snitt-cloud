@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import Rich from '../i18n/Rich';
-import type { InstallGuide, Strings } from '../i18n/types';
+import type { DepTag, InstallGuide, Strings } from '../i18n/types';
 import '../styles.install.css';
 
 type OsId = 'windows' | 'macos' | 'linux';
@@ -184,19 +184,27 @@ export default function Install() {
         </aside>
 
         <ul className="dep-list">
-          {t.install.deps.map((dep, i) => (
+          {t.install.deps.map((dep, i) => {
+            const tag: DepTag = dep.tag ?? (i === 0 ? 'required' : 'optional');
+            const tagLabel = {
+              required: t.install.tagRequired,
+              optional: t.install.tagOptional,
+              auto: t.install.tagAuto,
+            }[tag];
+            return (
             <li key={dep.name} className="dep">
               <div className="dep-head">
                 <code>{dep.name}</code>
-                <span className={i === 0 ? 'dep-tag dep-tag-req' : 'dep-tag'}>
-                  {i === 0 ? t.install.tagRequired : t.install.tagOptional}
+                <span className={tag === 'required' ? 'dep-tag dep-tag-req' : tag === 'auto' ? 'dep-tag dep-tag-auto' : 'dep-tag'}>
+                  {tagLabel}
                 </span>
               </div>
               <p>
                 <Rich text={dep.body} />
               </p>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         <div

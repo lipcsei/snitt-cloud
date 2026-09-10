@@ -122,7 +122,7 @@ export const en: Strings = {
             time: '02:31:05',
             quotes: 'hu',
             before: '',
-            hit: 'Nem mehetsz át!',
+            hit: 'Nem jöhetsz át!',
             after: '',
             score: '91%',
           },
@@ -323,11 +323,11 @@ export const en: Strings = {
     cta: 'Download — {os}',
     notice: {
       title: 'What do you need on your machine?',
-      body: 'Snitt relies on three external tools, and it deliberately does **not** bundle them — you install those separately:',
+      body: 'Snitt relies on three external tools, and it deliberately does **not** bundle them:',
       items: [
-        '`ffmpeg` — for cutting the videos and extracting the audio track.',
-        '`yt-dlp` — if you want to bring in a video from a link.',
-        '`whisper.cpp` — if you want transcripts from speech recognition too.',
+        '`ffmpeg` — for cutting the videos and extracting the audio track. You install this one yourself.',
+        '`yt-dlp` — if you want to bring in a video from a link. **The app downloads this one for you**, on one click, with its checksum verified.',
+        '`whisper.cpp` — if you want transcripts from speech recognition too. Yours to install; the model itself Snitt fetches.',
       ],
       foot: 'If you only search existing subtitles across your own files, `ffmpeg` is enough. The other two matter when you actually use those features.',
       cta: 'Installation guide per system →',
@@ -431,13 +431,14 @@ export const en: Strings = {
   install: {
     eyebrow: 'Installation',
     title: 'Installing the external tools',
-    lead: 'Snitt relies on three command line tools and deliberately does not bundle them: it uses the programs already on your machine, in your own versions. This page walks you through installing them, system by system.',
+    lead: 'Snitt relies on three command line tools and deliberately does not bundle them: it uses the programs already on your machine, in your own versions. yt-dlp is the exception the app can handle for you — one click, no terminal. This page walks you through the other two, system by system.',
     callout: {
       title: 'How much of this do you actually need?',
-      body: 'If you only search the subtitle files sitting next to your videos and the subtitle tracks embedded in them, **ffmpeg is enough**. The other two are not preconditions: install them when you first want to use that feature.',
+      body: 'If you only search the subtitle files sitting next to your videos and the subtitle tracks embedded in them, **ffmpeg is enough**. The other two are not preconditions — and yt-dlp needs no manual install at all: the app offers to download it the first time you bring in a video from a link.',
     },
     tagRequired: 'Required',
     tagOptional: 'Optional',
+    tagAuto: 'The app downloads it',
     deps: [
       {
         name: 'ffmpeg',
@@ -445,7 +446,8 @@ export const en: Strings = {
       },
       {
         name: 'yt-dlp',
-        body: 'Only if you want to bring a video into the library from a link.',
+        tag: 'auto',
+        body: 'Only if you want to bring a video into the library from a link — and that needs no terminal: the app offers to download it, verifies the official checksum and keeps it in its own folder. You can still install it yourself if you prefer; the app looks at its own copy first, then at your PATH.',
       },
       {
         name: 'whisper.cpp',
@@ -464,7 +466,7 @@ export const en: Strings = {
           title: '1. Install with winget',
           body: '`winget` ships with Windows 10 and 11, so there is nothing to install for it. Open a PowerShell window and run the lines you need.',
           codeLabel: 'PowerShell',
-          hint: 'The first line is needed for everything. The second one only if you also want to bring in videos from a link.',
+          hint: 'The first line is needed for everything. The second one only if you also want to bring in videos from a link — but the app offers that download too, without a terminal.',
         },
         {
           title: '2. Speech recognition (optional)',
@@ -490,7 +492,7 @@ export const en: Strings = {
         {
           title: '1. Homebrew',
           body: 'On macOS the shortest route is [Homebrew](https://brew.sh). If you do not have it yet, the install command is on the brew.sh home page. If you do, skip to the next line.',
-          hint: '`ffmpeg` is needed for everything, `yt-dlp` only for importing from a link.',
+          hint: '`ffmpeg` is needed for everything. `yt-dlp` is only for importing from a link — the app can fetch that one itself, so you can leave it out here.',
         },
         {
           title: '2. Speech recognition (optional)',
@@ -524,7 +526,7 @@ export const en: Strings = {
       ],
       warn: {
         title: 'yt-dlp: avoid the distribution package',
-        body: 'The `yt-dlp` in the repositories is typically out of date, and the video sites change often — an old version becomes useless within weeks. Download the official binary instead, it updates itself:',
+        body: 'The `yt-dlp` in the repositories is typically out of date, and the video sites change often — an old version becomes useless within weeks. The simplest route is to let the app handle it: when you import from a link it offers the official release and verifies its checksum. If you would rather do it yourself:',
       },
     },
 

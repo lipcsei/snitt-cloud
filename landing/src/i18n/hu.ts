@@ -107,7 +107,7 @@ export const hu: Strings = {
     semanticBadge: 'jelentés szerint',
     scenes: [
       {
-        query: 'nem mehetsz át',
+        query: 'nem jöhetsz át',
         stats: '2 találat · 0,3 mp',
         hits: [
           {
@@ -116,7 +116,7 @@ export const hu: Strings = {
             time: '02:31:05',
             quotes: 'hu',
             before: '',
-            hit: 'Nem mehetsz át!',
+            hit: 'Nem jöhetsz át!',
             after: '',
             score: '98%',
           },
@@ -331,11 +331,11 @@ export const hu: Strings = {
     cta: 'Letöltés — {os}',
     notice: {
       title: 'Mire van szükség a gépeden?',
-      body: 'A Snitt három külső eszközre támaszkodik, és ezeket **nem** csomagolja magába — külön kell telepítened őket:',
+      body: 'A Snitt három külső eszközre támaszkodik, és ezeket **nem** csomagolja magába:',
       items: [
-        '`ffmpeg` — a videók vágásához és a hangsáv kinyeréséhez.',
-        '`yt-dlp` — ha linkről szeretnél videót behozni.',
-        '`whisper.cpp` — ha beszédfelismeréssel is szeretnél átiratot készíteni.',
+        '`ffmpeg` — a videók vágásához és a hangsáv kinyeréséhez. Ezt kézzel kell telepítened.',
+        '`yt-dlp` — ha linkről szeretnél videót behozni. **Ezt az alkalmazás letölti neked**, egy kattintásra, ellenőrzőösszeggel.',
+        '`whisper.cpp` — ha beszédfelismeréssel is szeretnél átiratot készíteni. Ezt is kézzel; a modellt viszont már a Snitt hozza le.',
       ],
       foot: 'Ha csak meglévő feliratokban keresel a saját fájljaid között, elég az `ffmpeg`. A többi akkor kell, amikor tényleg használod őket.',
       cta: 'Telepítési útmutató rendszerenként →',
@@ -439,13 +439,14 @@ export const hu: Strings = {
   install: {
     eyebrow: 'Telepítés',
     title: 'Külső eszközök telepítése',
-    lead: 'A Snitt három parancssori eszközre támaszkodik, és ezeket szándékosan nem csomagolja magába: a gépeden lévő, saját verziójú programokat használja. Ez az oldal végigvezet a telepítésükön, rendszerenként.',
+    lead: 'A Snitt három parancssori eszközre támaszkodik, és ezeket szándékosan nem csomagolja magába: a gépeden lévő, saját verziójú programokat használja. A yt-dlp-t maga az alkalmazás is le tudja tölteni, egyetlen kattintásra — a másik kettőn ez az oldal vezet végig, rendszerenként.',
     callout: {
       title: 'Mennyi kell ebből tényleg?',
-      body: 'Ha csak a videóid mellett lévő feliratfájlokban és a videókba ágyazott feliratsávokban keresel, **elég az ffmpeg**. A másik kettő nem előfeltétel: akkor kell telepítened őket, amikor először használnád azt a funkciót.',
+      body: 'Ha csak a videóid mellett lévő feliratfájlokban és a videókba ágyazott feliratsávokban keresel, **elég az ffmpeg**. A másik kettő nem előfeltétel — és a yt-dlp-t nem is kell kézzel telepítened: az alkalmazás felajánlja a letöltését, amikor először hoznál be videót linkről.',
     },
     tagRequired: 'Kötelező',
     tagOptional: 'Opcionális',
+    tagAuto: 'Az app letölti',
     deps: [
       {
         name: 'ffmpeg',
@@ -453,7 +454,8 @@ export const hu: Strings = {
       },
       {
         name: 'yt-dlp',
-        body: 'Csak akkor, ha linkről szeretnél videót behozni a tárba.',
+        tag: 'auto',
+        body: 'Csak akkor, ha linkről szeretnél videót behozni a tárba — és ehhez nem kell terminál: az alkalmazás felajánlja a letöltést, ellenőrzi a hivatalos ellenőrzőösszeget, és a saját mappájába teszi. Kézzel is telepítheted, ha úgy szeretnéd; az alkalmazás előbb a saját példányát nézi, aztán a PATH-ot.',
       },
       {
         name: 'whisper.cpp',
@@ -472,7 +474,7 @@ export const hu: Strings = {
           title: '1. Telepítés wingettel',
           body: 'A `winget` a Windows 10 és 11 része, külön telepíteni nem kell. Nyiss egy PowerShell ablakot, és futtasd a szükséges sorokat.',
           codeLabel: 'PowerShell',
-          hint: 'Az első sor kell mindenhez. A második csak akkor, ha linkről is szeretnél videót behozni.',
+          hint: 'Az első sor kell mindenhez. A második csak akkor, ha linkről is szeretnél videót behozni — de ezt az alkalmazás fel is ajánlja, terminál nélkül.',
         },
         {
           title: '2. Beszédfelismerés (opcionális)',
@@ -498,7 +500,7 @@ export const hu: Strings = {
         {
           title: '1. Homebrew',
           body: 'macOS-en a legrövidebb út a [Homebrew](https://brew.sh). Ha még nincs fent, a telepítőparancsot a brew.sh kezdőlapján találod. Ha már megvan, ugorj a következő sorra.',
-          hint: 'Az `ffmpeg` kell mindenhez, a `yt-dlp` csak a linkről importáláshoz.',
+          hint: 'Az `ffmpeg` kell mindenhez. A `yt-dlp` csak a linkről importáláshoz — azt az alkalmazás magától is le tudja tölteni, tehát elhagyható innen.',
         },
         {
           title: '2. Beszédfelismerés (opcionális)',
@@ -532,7 +534,7 @@ export const hu: Strings = {
       ],
       warn: {
         title: 'yt-dlp: kerüld a disztribúciós csomagot',
-        body: 'A tárolókban lévő `yt-dlp` jellemzően elavult, a videómegosztók pedig gyakran változnak — egy régi verzió hetek alatt használhatatlanná válik. Töltsd le inkább a hivatalos binárist, ez frissíti magát:',
+        body: 'A tárolókban lévő `yt-dlp` jellemzően elavult, a videómegosztók pedig gyakran változnak — egy régi verzió hetek alatt használhatatlanná válik. A legegyszerűbb, ha az alkalmazásra bízod: a linkes importálásnál felajánlja a hivatalos kiadás letöltését, és ellenőrzi az ellenőrzőösszegét. Ha inkább magad intéznéd:',
       },
     },
 

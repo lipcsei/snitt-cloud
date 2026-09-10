@@ -58,6 +58,9 @@ export type PreviewScene = {
   cut: { range: string; file: string };
 };
 
+/** Egy külső eszköz besorolása a telepítési oldalon. */
+export type DepTag = 'required' | 'optional' | 'auto';
+
 export type InstallGuide = {
   steps: readonly {
     title: string;
@@ -247,7 +250,9 @@ export type Strings = {
     callout: { title: string; body: string };
     tagRequired: string;
     tagOptional: string;
-    deps: Three<{ name: string; body: string }>;
+    /** Amit maga az alkalmazás tölt le - nem kell hozzá terminál. */
+    tagAuto: string;
+    deps: Three<{ name: string; body: string; tag?: DepTag }>;
     tabsAria: string;
     codeLabel: string;
     copy: string;

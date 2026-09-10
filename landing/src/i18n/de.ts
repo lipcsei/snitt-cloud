@@ -331,11 +331,11 @@ export const de: Strings = {
     cta: 'Herunterladen — {os}',
     notice: {
       title: 'Was brauchst du auf deinem Rechner?',
-      body: 'Snitt stützt sich auf drei externe Werkzeuge und bringt sie bewusst **nicht** mit — die installierst du separat:',
+      body: 'Snitt stützt sich auf drei externe Werkzeuge und bringt sie bewusst **nicht** mit:',
       items: [
-        '`ffmpeg` — zum Schneiden der Videos und zum Extrahieren der Tonspur.',
-        '`yt-dlp` — wenn du ein Video über einen Link holen willst.',
-        '`whisper.cpp` — wenn du Transkripte auch per Spracherkennung erzeugen willst.',
+        '`ffmpeg` — zum Schneiden der Videos und zum Extrahieren der Tonspur. Das installierst du selbst.',
+        '`yt-dlp` — wenn du ein Video über einen Link holen willst. **Das lädt die App für dich**, auf einen Klick und mit geprüfter Prüfsumme.',
+        '`whisper.cpp` — wenn du Transkripte auch per Spracherkennung erzeugen willst. Auch selbst; das Modell holt Snitt dagegen schon.',
       ],
       foot: 'Wenn du nur vorhandene Untertitel in deinen eigenen Dateien durchsuchst, reicht `ffmpeg`. Die anderen beiden brauchst du erst, wenn du diese Funktionen wirklich nutzt.',
       cta: 'Installationsanleitung pro System →',
@@ -439,13 +439,14 @@ export const de: Strings = {
   install: {
     eyebrow: 'Installation',
     title: 'Die externen Werkzeuge installieren',
-    lead: 'Snitt stützt sich auf drei Kommandozeilenwerkzeuge und bringt sie bewusst nicht mit: Es nutzt die Programme, die auf deinem Rechner liegen, in deinen eigenen Versionen. Diese Seite führt dich System für System durch die Installation.',
+    lead: 'Snitt stützt sich auf drei Kommandozeilenwerkzeuge und bringt sie bewusst nicht mit: Es nutzt die Programme, die auf deinem Rechner liegen, in deinen eigenen Versionen. Die Ausnahme ist yt-dlp — das lädt die App auf einen Klick selbst, ganz ohne Terminal. Durch die anderen beiden führt dich diese Seite, System für System.',
     callout: {
       title: 'Wie viel davon brauchst du wirklich?',
-      body: 'Wenn du nur in den Untertiteldateien neben deinen Videos und in den eingebetteten Untertitelspuren suchst, **reicht ffmpeg**. Die anderen beiden sind keine Voraussetzung: Die installierst du, wenn du die jeweilige Funktion zum ersten Mal nutzen willst.',
+      body: 'Wenn du nur in den Untertiteldateien neben deinen Videos und in den eingebetteten Untertitelspuren suchst, **reicht ffmpeg**. Die anderen beiden sind keine Voraussetzung — und yt-dlp musst du gar nicht von Hand installieren: Die App bietet den Download an, sobald du zum ersten Mal ein Video über einen Link holst.',
     },
     tagRequired: 'Erforderlich',
     tagOptional: 'Optional',
+    tagAuto: 'Die App lädt es',
     deps: [
       {
         name: 'ffmpeg',
@@ -453,7 +454,8 @@ export const de: Strings = {
       },
       {
         name: 'yt-dlp',
-        body: 'Nur dann, wenn du ein Video über einen Link in die Sammlung holen willst.',
+        tag: 'auto',
+        body: 'Nur dann, wenn du ein Video über einen Link in die Sammlung holen willst — und dafür brauchst du kein Terminal: Die App bietet den Download an, prüft die offizielle Prüfsumme und legt die Datei in ihren eigenen Ordner. Von Hand geht es weiterhin; die App schaut zuerst in ihren eigenen Ordner, dann in den PATH.',
       },
       {
         name: 'whisper.cpp',
@@ -472,7 +474,7 @@ export const de: Strings = {
           title: '1. Installation mit winget',
           body: '`winget` ist Teil von Windows 10 und 11, dafür musst du nichts extra installieren. Öffne ein PowerShell-Fenster und führe die Zeilen aus, die du brauchst.',
           codeLabel: 'PowerShell',
-          hint: 'Die erste Zeile brauchst du für alles. Die zweite nur, wenn du Videos auch über einen Link holen willst.',
+          hint: 'Die erste Zeile brauchst du für alles. Die zweite nur, wenn du Videos auch über einen Link holen willst — diesen Download bietet dir die App aber auch ohne Terminal an.',
         },
         {
           title: '2. Spracherkennung (optional)',
@@ -498,7 +500,7 @@ export const de: Strings = {
         {
           title: '1. Homebrew',
           body: 'Unter macOS ist [Homebrew](https://brew.sh) der kürzeste Weg. Wenn du es noch nicht hast, findest du den Installationsbefehl auf der Startseite von brew.sh. Wenn es schon da ist, spring zur nächsten Zeile.',
-          hint: '`ffmpeg` brauchst du für alles, `yt-dlp` nur für den Import über einen Link.',
+          hint: '`ffmpeg` brauchst du für alles. `yt-dlp` nur für den Import über einen Link — das holt sich die App auf Wunsch selbst, du kannst es hier also weglassen.',
         },
         {
           title: '2. Spracherkennung (optional)',
@@ -532,7 +534,7 @@ export const de: Strings = {
       ],
       warn: {
         title: 'yt-dlp: das Distributionspaket besser meiden',
-        body: 'Das `yt-dlp` aus den Repositories ist meist veraltet, und die Videoportale ändern sich häufig — eine alte Version wird binnen Wochen unbrauchbar. Lade lieber die offizielle Binärdatei, die aktualisiert sich selbst:',
+        body: 'Das `yt-dlp` aus den Repositories ist meist veraltet, und die Videoportale ändern sich häufig — eine alte Version wird binnen Wochen unbrauchbar. Am einfachsten überlässt du es der App: Beim Import über einen Link bietet sie die offizielle Version an und prüft deren Prüfsumme. Wenn du es lieber selbst machst:',
       },
     },
 
