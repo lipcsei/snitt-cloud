@@ -47,6 +47,27 @@ A compose `admin`/`admin` párost ad (`KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD
 Élesben ezt is cseréld, és a Keycloak admin felületét ne tedd ki a nyilvános
 internetre.
 
+## 7. Mentés – és próbáld is ki
+
+A `deploy/scripts/backup.sh` a Postgres két adatbázisát menti: a Keycloakét
+(felhasználók, jelszó-lenyomatok) és az account szolgáltatásét (profilok,
+előfizetések, számlák). Ez az **egyetlen adat az egész rendszerben, ami nem
+újratermelhető** – a landing statikus, a képek újraépíthetők, a felhasználók
+videói pedig a saját gépükön vannak.
+
+```bash
+# naponta hajnali 3-kor
+0 3 * * * /opt/snitt/deploy/scripts/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
+```
+
+Két dolog, ami nélkül a mentés csak illúzió:
+
+- **Vidd le a VPS-ről.** Egy mentés ugyanazon a lemezen, ami elveszhet, nem
+  mentés. `rsync`, `rclone` vagy a szolgáltató objektumtára – mindegy, csak
+  máshol legyen.
+- **Állítsd is vissza egyszer.** A `restore.sh` megvan hozzá. Egy soha ki nem
+  próbált mentés nem mentés, csak remény.
+
 ## Ami már jó, és nem kell hozzányúlni
 
 - **Jelszóházirend**: `length(10) and notUsername and notEmail`. NIST-igazodó:
