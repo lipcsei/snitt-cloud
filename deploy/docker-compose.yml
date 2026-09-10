@@ -27,6 +27,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      # A Keycloak külön adatbázisa az első induláskor jön létre.
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-snitt} -d ${POSTGRES_DB:-snitt}"]
       interval: 5s
@@ -37,9 +39,23 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     command: ["start-dev", "--import-realm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # A Keycloak SAJÁT adatbázisba ír, a Postgresbe.
+      #
+      # Enélkül a start-dev a konténerbe ágyazott H2-t használná, kötet
+      # nélkül: minden újralétrehozáskor elveszne MINDEN felhasználó és
+      # jelszó. Fejlesztésnél bosszantó, élesben végzetes - és menteni sem
+      # lenne mit. Külön adatbázis (nem külön séma), hogy a mentés és a
+      # visszaállítás is szétválasztható legyen.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-snitt}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-snitt}
       KC_HTTP_PORT: "8081"
       # Az issuer URL-nek meg kell egyeznie azzal, amit a böngésző és az account
       # szolgáltatás is lát, különben a token issuer ellenőrzése elbukik.
