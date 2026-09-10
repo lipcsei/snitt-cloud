@@ -43,8 +43,10 @@ export const hu: Strings = {
     langAria: 'Nyelvválasztó',
     langHu: 'HU',
     langEn: 'EN',
+    langDe: 'DE',
     langHuTitle: 'Magyar',
     langEnTitle: 'English',
+    langDeTitle: 'Deutsch',
   },
 
   hero: {

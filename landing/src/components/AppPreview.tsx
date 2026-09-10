@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
+import type { Lang } from '../i18n';
+
+/** Nyelvenkénti idézőjelpár: a német záró jele a magyartól is eltér. */
+const QUOTES: Record<Lang, readonly [string, string]> = {
+  hu: ['„', '”'],
+  en: ['"', '"'],
+  de: ['„', '“'],
+};
 
 /**
  * A jelenetek szövege a nyelvi táblákban van, a geometria (kijelölés helye a
@@ -110,11 +118,11 @@ export default function AppPreview() {
                   </span>
                   <span className="result-body">
                     <span className="result-line">
-                      {r.quotes === 'hu' ? '„' : '"'}
+                      {QUOTES[r.quotes][0]}
                       {r.before}
                       <mark>{r.hit}</mark>
                       {r.after}
-                      {r.quotes === 'hu' ? '”' : '"'}
+                      {QUOTES[r.quotes][1]}
                     </span>
                     {/* A második találat mindig a jelentés szerinti, másik nyelvű sor. */}
                     {i === 1 && <span className="result-badge">{t.preview.semanticBadge}</span>}

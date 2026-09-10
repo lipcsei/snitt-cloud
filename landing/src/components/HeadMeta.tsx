@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { PATHS, absoluteUrl, routeKeyFromPathname, useI18n } from '../i18n';
-import { hu } from '../i18n/hu';
-import { en } from '../i18n/en';
+import { DEFAULT_LANG, LANGS, PATHS, TABLES, absoluteUrl, routeKeyFromPathname, useI18n } from '../i18n';
 
 /**
  * A dokumentumfej nyelvfüggő része. Nem renderel semmit, csak a <html lang>-ot,
@@ -27,10 +25,11 @@ export default function HeadMeta() {
     document.head
       .querySelectorAll('link[data-i18n], link[rel="canonical"], link[rel="alternate"][hreflang]')
       .forEach((node) => node.remove());
-    addLink('alternate', absoluteUrl(PATHS.hu[routeKey]), hu.htmlLang);
-    addLink('alternate', absoluteUrl(PATHS.en[routeKey]), en.htmlLang);
+    for (const code of LANGS) {
+      addLink('alternate', absoluteUrl(PATHS[code][routeKey]), TABLES[code].htmlLang);
+    }
     // A nyelvsemleges belépési pont a magyar URL: onnan irányítunk tovább.
-    addLink('alternate', absoluteUrl(PATHS.hu[routeKey]), 'x-default');
+    addLink('alternate', absoluteUrl(PATHS[DEFAULT_LANG][routeKey]), 'x-default');
     addLink('canonical', absoluteUrl(PATHS[lang][routeKey]));
   }, [lang, htmlLang, title, description, routeKey]);
 

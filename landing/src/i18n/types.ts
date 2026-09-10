@@ -1,5 +1,5 @@
 /**
- * A két nyelvi tábla közös szerződése. Mindkét tábla erre a típusra van
+ * A nyelvi táblák közös szerződése. Mindegyik tábla erre a típusra van
  * annotálva, így egy kifelejtett kulcs fordítási hiba, nem futásidejű üres
  * szöveg. Ezért nincs sehol Record<string, string>: a kulcsokat itt soroljuk fel.
  *
@@ -7,7 +7,7 @@
  *   `kód`  **félkövér**  *kiemelt*  [link szöveg](/utvonal)  \n = sortörés
  */
 
-export type Lang = 'hu' | 'en';
+export type Lang = 'hu' | 'en' | 'de';
 
 /** Nyelvfüggetlen oldalazonosítók; ezekhez tartoznak a nyelvenkénti útvonalak. */
 export type RouteKey = 'home' | 'install' | 'profile';
@@ -37,7 +37,7 @@ export type FaqItem = { q: string; a: readonly string[] };
 
 export type ListItem = { title: string; body: string };
 
-/** Az idézőjelek nyelvfüggők: magyar „…”, angol "…". */
+/** Az idézőjelek nyelvfüggők: magyar „…”, angol "…", német „…“. */
 export type PreviewHit = {
   title: string;
   source: string;
@@ -106,8 +106,10 @@ export type Strings = {
     langAria: string;
     langHu: string;
     langEn: string;
+    langDe: string;
     langHuTitle: string;
     langEnTitle: string;
+    langDeTitle: string;
   };
 
   hero: {

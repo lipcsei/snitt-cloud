@@ -43,8 +43,10 @@ export const en: Strings = {
     langAria: 'Language',
     langHu: 'HU',
     langEn: 'EN',
+    langDe: 'DE',
     langHuTitle: 'Magyar',
     langEnTitle: 'English',
+    langDeTitle: 'Deutsch',
   },
 
   hero: {

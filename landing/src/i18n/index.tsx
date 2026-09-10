@@ -2,13 +2,24 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { hu } from './hu';
 import { en } from './en';
+import { de } from './de';
 import type { Lang, RouteKey, Strings } from './types';
 
 export type { Lang, RouteKey, Strings } from './types';
 
-const TABLES: Record<Lang, Strings> = { hu, en };
+export const TABLES: Record<Lang, Strings> = { hu, en, de };
 
-export const LANGS = ['hu', 'en'] as const;
+/** A fejléc nyelvváltója is ebben a sorrendben sorolja fel a nyelveket. */
+export const LANGS = ['hu', 'en', 'de'] as const;
+
+/** A prefix nélküli "/" ehhez a nyelvhez tartozik. */
+export const DEFAULT_LANG: Lang = 'hu';
+
+/**
+ * Azok a nyelvek, amiknek saját útvonal-előtagjuk van. A magyar szándékosan
+ * nincs köztük: az a prefix nélküli alap, minden más innen ismerszik meg.
+ */
+const PREFIXED = ['en', 'de'] as const;
 
 /**
  * A nyelvenkénti útvonalak. A nyelv KIZÁRÓLAG az URL-ből derül ki
@@ -18,6 +29,7 @@ export const LANGS = ['hu', 'en'] as const;
 export const PATHS: Record<Lang, Record<RouteKey, string>> = {
   hu: { home: '/', install: '/telepites', profile: '/profil' },
   en: { home: '/en', install: '/en/install', profile: '/en/profile' },
+  de: { home: '/de', install: '/de/installation', profile: '/de/profil' },
 };
 
 const STORAGE_KEY = 'snitt.lang';
@@ -29,7 +41,7 @@ function normalize(pathname: string): string {
 
 export function langFromPathname(pathname: string): Lang {
   const path = normalize(pathname);
-  return path === '/en' || path.startsWith('/en/') ? 'en' : 'hu';
+  return PREFIXED.find((code) => path === `/${code}` || path.startsWith(`/${code}/`)) ?? DEFAULT_LANG;
 }
 
 /** Melyik oldalon vagyunk - a nyelvváltó ehhez keresi meg a másik nyelvű párját. */
@@ -59,7 +71,7 @@ export function rememberLang(lang: Lang): void {
 function storedLang(): Lang | null {
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'hu' || value === 'en' ? value : null;
+    return (LANGS as readonly string[]).includes(value ?? '') ? (value as Lang) : null;
   } catch {
     return null;
   }
@@ -70,21 +82,21 @@ function storedLang(): Lang | null {
  * választott nyelvet, azt onnantól a döntése viszi - így nem lehet beragadni
  * egy nyelvbe, amit a böngésző beállítása erőltet rá.
  */
-export function prefersEnglishOnEntry(): boolean {
+export function entryLang(): Lang {
   const stored = storedLang();
-  if (stored) return stored === 'en';
-  if (typeof navigator === 'undefined') return false;
+  if (stored) return stored;
+  if (typeof navigator === 'undefined') return DEFAULT_LANG;
 
-  // A kettő közül az dönt, amelyik előrébb van a böngésző listájában: egy
-  // en-GB > hu-HU beállítású látogató angolul olvasna, egy hu-HU > en-US pedig
-  // magyarul. Ha egyik sem szerepel benne, az angol a jobb tipp.
+  // A böngésző listájában előrébb álló nyelv dönt: egy de-AT > en-US
+  // beállítású látogató németül olvasna, egy hu-HU > de-DE pedig magyarul.
+  // Ha egyik nyelvünk sem szerepel benne, az angol a jobb tipp.
   const list = navigator.languages?.length ? navigator.languages : [navigator.language];
   for (const item of list) {
     const code = item?.toLowerCase() ?? '';
-    if (code.startsWith('hu')) return false;
-    if (code.startsWith('en')) return true;
+    const hit = LANGS.find((lang) => code.startsWith(lang));
+    if (hit) return hit;
   }
-  return true;
+  return 'en';
 }
 
 /** "Letöltés — {os}" + { os: 'Windows' } → "Letöltés — Windows" */

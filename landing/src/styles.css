@@ -1327,9 +1327,21 @@ a {
     max-width: 96px;
   }
 
+  /* Három nyelv is elfér a fejlécben: a váltó és a bejelentkezés gomb szűkebb
+     belső margóval megy, különben a leghosszabb felirat („Bejelentkezés”,
+     „Registrieren”) 380 képpontnál kilógna a jobb szélen. */
+  .header-actions {
+    gap: 4px;
+  }
+
+  .header-actions .btn {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
   .lang-opt {
-    padding: 4px 8px;
-    font-size: 0.74rem;
+    padding: 4px 7px;
+    font-size: 0.73rem;
   }
 
   .hero-cta .btn {
