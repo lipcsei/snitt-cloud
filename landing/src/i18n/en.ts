@@ -50,7 +50,7 @@ export const en: Strings = {
   hero: {
     pill: 'Desktop app · Windows · macOS · Linux',
     title: 'You know the line.\nJust not *which film*.',
-    lead: 'Snitt transcribes your video library and finds the line you type — in a two-hour film, in about a second. Then it cuts that scene out for you.',
+    lead: 'Or you do know, and you just want your favourite scene as a file. Snitt transcribes your video library, finds the line you type — in a two-hour film, in about a second — and cuts that moment out for you.',
     download: 'Download',
     register: 'Sign up',
     facts: ['No upload, no cloud', 'One SQLite file on your own machine', 'No account needed'],

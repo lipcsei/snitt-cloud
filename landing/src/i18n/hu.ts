@@ -50,7 +50,7 @@ export const hu: Strings = {
   hero: {
     pill: 'Asztali alkalmazás · Windows · macOS · Linux',
     title: 'Megvan a mondat.\nCsak azt nem tudod, *melyik filmben*.',
-    lead: 'A Snitt átiratot készít a videótáradról, és megkeresi benne a beírt idézetet — egy kétórás filmben másodpercek alatt. Aztán ki is vágja neked azt a jelenetet.',
+    lead: 'Vagy tudod, és csak ki akarod vágni a kedvenc jelenetedet. A Snitt leiratot készít a videótáradról, megkeresi benne a beírt idézetet — egy kétórás filmben másodpercek alatt —, és kivágja neked azt a részletet fájlba.',
     download: 'Letöltés',
     register: 'Regisztráció',
     facts: [
