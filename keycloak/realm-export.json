@@ -164,7 +164,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin",
+          "value": "snittadmin1234",
           "temporary": false
         }
       ]
@@ -179,7 +179,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "demo12345678",
           "temporary": false
         }
       ]
@@ -188,7 +188,21 @@
   "internationalizationEnabled": true,
   "supportedLocales": [
     "hu",
-    "en"
+    "en",
+    "de"
   ],
-  "defaultLocale": "hu"
+  "defaultLocale": "hu",
+  "passwordPolicy": "length(10) and notUsername and notEmail",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "ssoSessionIdleTimeout": 2592000,
+  "ssoSessionMaxLifespan": 7776000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accountTheme": "keycloak.v3"
 }
