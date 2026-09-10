@@ -59,7 +59,9 @@ services:
       # történik - ezért a két URL szándékosan eltér.
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/snitt}
       KEYCLOAK_DISCOVERY_URL: http://keycloak:8081/realms/snitt
-      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-snitt-landing}
+      # Több kliens hívja ugyanezt az API-t, mindegyik a saját client id-jével
+      # kap tokent - ezért az elfogadott audience-ek listája.
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-snitt-landing,snitt-admin}
       # A landing (5174) és az admin felület (5175) is innen hívja az API-t.
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5174,http://localhost:5175}
       # A Keycloak Admin REST API a compose-hálózaton belülről érhető el; a

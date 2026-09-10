@@ -1,9 +1,10 @@
 import { useAuth } from '../AuthProvider';
 import AppPreview from '../components/AppPreview';
-import SectionLink from '../components/SectionLink';
+import { useNotYet } from '../NotYetProvider';
 
 export default function Hero() {
-  const { ready, authenticated, register } = useAuth();
+  const { authenticated } = useAuth();
+  const showNotYet = useNotYet();
 
   return (
     <section className="hero">
@@ -26,15 +27,18 @@ export default function Hero() {
           </p>
 
           <div className="hero-cta">
-            <SectionLink to="letoltes" className="btn btn-primary btn-lg">
+            <button
+              type="button"
+              className="btn btn-primary btn-lg"
+              onClick={() => showNotYet('download')}
+            >
               Letöltés
-            </SectionLink>
+            </button>
             {!authenticated && (
               <button
                 type="button"
                 className="btn btn-outline btn-lg"
-                onClick={register}
-                disabled={!ready}
+                onClick={() => showNotYet('register')}
               >
                 Regisztráció
               </button>

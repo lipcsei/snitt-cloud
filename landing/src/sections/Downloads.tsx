@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { RELEASES_URL } from '../constants';
+import { useNotYet } from '../NotYetProvider';
 
 const PLATFORMS = [
   {
@@ -54,6 +54,8 @@ function PlatformMark({ id }: { id: string }) {
 }
 
 export default function Downloads() {
+  const showNotYet = useNotYet();
+
   return (
     <section id="letoltes" className="section">
       <div className="container">
@@ -74,14 +76,13 @@ export default function Downloads() {
               <h3>{p.name}</h3>
               <p className="platform-detail">{p.detail}</p>
               <span className="platform-file">{p.file}</span>
-              <a
+              <button
+                type="button"
                 className="btn btn-primary btn-block"
-                href={RELEASES_URL}
-                target="_blank"
-                rel="noreferrer noopener"
+                onClick={() => showNotYet('download')}
               >
                 Letöltés — {p.name}
-              </a>
+              </button>
             </article>
           ))}
         </div>

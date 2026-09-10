@@ -33,7 +33,10 @@ func Load() (Config, error) {
 		HTTPAddr:         env("HTTP_ADDR", ":8090"),
 		DatabaseURL:      env("DATABASE_URL", "postgres://snitt:snitt@localhost:5432/snitt?sslmode=disable"),
 		KeycloakIssuer:   env("KEYCLOAK_ISSUER", "http://localhost:8081/realms/snitt"),
-		KeycloakAudience: env("KEYCLOAK_AUDIENCE", "snitt-landing"),
+		// Vesszővel elválasztva több elfogadott audience is megadható: a
+		// landing, az admin felület és később a desktop app is a saját
+		// client id-jével kap tokent ugyanehhez az API-hoz.
+		KeycloakAudience: env("KEYCLOAK_AUDIENCE", "snitt-landing,snitt-admin"),
 		CORSOrigins:      splitList(env("CORS_ORIGINS", "http://localhost:5174,http://localhost:5175")),
 
 		KeycloakBaseURL:   strings.TrimRight(env("KEYCLOAK_BASE_URL", "http://localhost:8081"), "/"),

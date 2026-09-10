@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthProvider';
 import Logo from './Logo';
 import SectionLink from './SectionLink';
+import { useNotYet } from '../NotYetProvider';
 
 export default function Header() {
-  const { ready, authenticated, profile, login, register } = useAuth();
+  const { ready, authenticated, profile, login } = useAuth();
+  const showNotYet = useNotYet();
 
   return (
     <header className="site-header">
@@ -37,8 +39,7 @@ export default function Header() {
               <button
                 type="button"
                 className="btn btn-primary btn-sm-hide"
-                onClick={register}
-                disabled={!ready}
+                onClick={() => showNotYet('register')}
               >
                 Regisztráció
               </button>

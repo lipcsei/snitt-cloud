@@ -1,0 +1,80 @@
+/* "Ne legyetek hamariak" modal - a letöltés/regisztráció még nem él. */
+
+.notyet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(4, 6, 12, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: notyet-fade 0.18s ease-out;
+}
+
+@keyframes notyet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.notyet-modal {
+  width: min(460px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 0 0 22px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.notyet-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.notyet-quote {
+  margin: 22px 24px 12px;
+  font-size: 1.32rem;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.notyet-quote cite {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--faint);
+}
+
+.notyet-body {
+  margin: 0 24px 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.notyet-close {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent-grad);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notyet-close:hover { filter: brightness(1.08); }
+
+@media (prefers-reduced-motion: reduce) {
+  .notyet-overlay { animation: none; }
+}

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthProvider';
+import { useNotYet } from '../NotYetProvider';
 
 export default function Account() {
-  const { ready, authenticated, profile, register, login } = useAuth();
+  const { ready, authenticated, profile, login } = useAuth();
+  const showNotYet = useNotYet();
 
   return (
     <section id="fiok" className="section section-alt">
@@ -36,8 +38,7 @@ export default function Account() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={register}
-                  disabled={!ready}
+                  onClick={() => showNotYet('register')}
                 >
                   Regisztráció
                 </button>

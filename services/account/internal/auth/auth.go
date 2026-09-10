@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -52,6 +54,9 @@ var ErrUnauthenticated = errors.New("hitelesítés sikertelen")
 // OIDCVerifier OIDC discovery alapján ellenőrzi a Keycloak tokeneket.
 type OIDCVerifier struct {
 	verifier *oidc.IDTokenVerifier
+	// audiences csak akkor van kitöltve, ha többet is elfogadunk - egyetlen
+	// audience-t maga a go-oidc ellenőriz.
+	audiences []string
 }
 
 // NewOIDCVerifier lekéri a discovery dokumentumot és felépíti a JWKS-alapú
@@ -61,22 +66,55 @@ type OIDCVerifier struct {
 // "keycloak" hoszton éri el a Keycloakot, a böngészőnek kiadott tokenek
 // issuer claimje viszont "localhost". A tokenek ellenőrzése ilyenkor is az
 // issuer paraméterhez igazodik.
+//
+// Az audience vesszővel elválasztva több értéket is felvehet: ugyanezt az
+// API-t több kliens hívja (landing, admin felület, később a desktop app), és
+// mindegyik a SAJÁT client id-jével kap tokent. Üres audience esetén nincs
+// ellenőrzés.
 func NewOIDCVerifier(ctx context.Context, issuer, discoveryURL, audience string) (*OIDCVerifier, error) {
 	if discoveryURL == "" {
 		discoveryURL = issuer
 	}
-	if discoveryURL != issuer {
-		ctx = oidc.InsecureIssuerURLContext(ctx, issuer)
+	allowed := splitAudiences(audience)
+	cfg := &oidc.Config{SkipClientIDCheck: true}
+	if len(allowed) == 1 {
+		cfg = &oidc.Config{ClientID: allowed[0]}
 	}
-	provider, err := oidc.NewProvider(ctx, discoveryURL)
-	if err != nil {
-		return nil, fmt.Errorf("oidc discovery (%s): %w", discoveryURL, err)
+
+	if discoveryURL == issuer {
+		provider, err := oidc.NewProvider(ctx, discoveryURL)
+		if err != nil {
+			return nil, fmt.Errorf("oidc discovery (%s): %w", discoveryURL, err)
+		}
+		v := &OIDCVerifier{verifier: provider.Verifier(cfg)}
+		if len(allowed) > 1 {
+			v.audiences = allowed
+		}
+		return v, nil
 	}
-	cfg := &oidc.Config{ClientID: audience}
-	if audience == "" {
-		cfg.SkipClientIDCheck = true
+
+	// Eltérő discovery URL esetén NEM használhatjuk a discovery dokumentumból
+	// kapott jwks_uri-t: azt a Keycloak a saját publikus hostnevével tölti ki
+	// (localhost), amit a konténerből nem lehet elérni - az aláírás-ellenőrzés
+	// így "connection refused"-dal bukna. A kulcsokat ezért közvetlenül a
+	// belső címről kérjük, az issuer ellenőrzése viszont marad a publikus
+	// értéken, mert a tokenekben az szerepel.
+	keySet := oidc.NewRemoteKeySet(ctx, strings.TrimSuffix(discoveryURL, "/")+"/protocol/openid-connect/certs")
+	v := &OIDCVerifier{verifier: oidc.NewVerifier(issuer, keySet, cfg)}
+	if len(allowed) > 1 {
+		v.audiences = allowed
 	}
-	return &OIDCVerifier{verifier: provider.Verifier(cfg)}, nil
+	return v, nil
+}
+
+func splitAudiences(audience string) []string {
+	out := make([]string, 0, 2)
+	for _, a := range strings.Split(audience, ",") {
+		if a = strings.TrimSpace(a); a != "" {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // Verify ellenőrzi az aláírást, az issuert, a lejáratot és az audience-t.
@@ -97,6 +135,11 @@ func (v *OIDCVerifier) Verify(ctx context.Context, rawToken string) (Identity, e
 	if id.Subject == "" {
 		return Identity{}, fmt.Errorf("%w: hiányzó sub claim", ErrUnauthenticated)
 	}
+	if len(v.audiences) > 0 && !slices.ContainsFunc(v.audiences, func(a string) bool {
+		return slices.Contains(tok.Audience, a)
+	}) {
+		return Identity{}, fmt.Errorf("%w: a token audience-e nem elfogadott (%v)", ErrUnauthenticated, tok.Audience)
+	}
 	return id, nil
 }
 
@@ -112,6 +155,10 @@ func Middleware(v TokenVerifier) func(http.Handler) http.Handler {
 			}
 			id, err := v.Verify(r.Context(), raw)
 			if err != nil {
+				// A kliens szándékosan csak általános üzenetet kap (nem
+				// segítünk a token kitalálásában), de a szerver naplójában
+				// látni kell az okot - enélkül vakon kell hibát keresni.
+				slog.Warn("token ellenőrzése sikertelen", "path", r.URL.Path, "err", err)
 				writeUnauthorized(w, "érvénytelen token")
 				return
 			}
