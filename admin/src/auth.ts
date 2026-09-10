@@ -1,13 +1,23 @@
 import Keycloak from 'keycloak-js';
 import type { KeycloakInitOptions } from 'keycloak-js';
 
+/**
+ * A build-időben beégetett érték lehet ÜRES sztring is (nem csak hiányzó), ha
+ * a CI-ban vagy a docker buildben nincs kitöltve - az `??` erre nem esik
+ * vissza, és a keycloak-js üres realmmel a saját domainünkre lőne.
+ */
+function env(value: string | undefined, fallback: string): string {
+  const trimmed = (value ?? '').trim();
+  return trimmed || fallback;
+}
+
 export const keycloakConfig = {
-  url: import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081',
-  realm: import.meta.env.VITE_KEYCLOAK_REALM ?? 'snitt',
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? 'snitt-admin',
+  url: env(import.meta.env.VITE_KEYCLOAK_URL, 'http://localhost:8081'),
+  realm: env(import.meta.env.VITE_KEYCLOAK_REALM, 'snitt'),
+  clientId: env(import.meta.env.VITE_KEYCLOAK_CLIENT_ID, 'snitt-admin'),
 };
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8090').replace(
+export const API_BASE_URL = env(import.meta.env.VITE_API_BASE_URL, 'http://localhost:8090').replace(
   /\/$/,
   '',
 );
