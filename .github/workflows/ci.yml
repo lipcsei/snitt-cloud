@@ -111,9 +111,18 @@ jobs:
           # Egyoldalas alkalmazás: a 404-re ugyanaz a dokumentum kell, különben
           # a /telepites és a /profil útvonal újratöltésnél 404-et adna.
           cp dist/index.html dist/404.html
-          # Saját domain (snitt.video) - enélkül a Pages a *.github.io címre esne vissza.
-          echo "snitt.video" > dist/CNAME
+          # Saját domain: csak akkor írjuk ki, ha be van állítva a PAGES_CNAME
+          # repository variable ÉS a DNS is mutat ide - különben a Pages a
+          # *.github.io címen szolgálna ki, a CNAME viszont hibát adna.
+          if [ -n "${{ vars.PAGES_CNAME }}" ]; then
+            echo "${{ vars.PAGES_CNAME }}" > dist/CNAME
+          fi
       - uses: actions/configure-pages@v5
+        with:
+          # Ha a repóban még nincs bekapcsolva a Pages, a workflow maga
+          # kapcsolja be (GitHub Actions forrással) - enélkül "Get Pages site
+          # failed: Not Found" hibával áll meg.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: landing/dist

@@ -94,6 +94,39 @@ implementáció. A felület soha nem hív szolgáltató-specifikus végpontot, c
 ezért egy valódi szolgáltató bekötése a felületet nem érinti (legfeljebb a „terhelés nem
 történik” magyarázó szövegek tűnnek el).
 
+## Üzemeltetés (Docker, VPS)
+
+Az admin felület statikus SPA, amit nginx szolgál ki - fejlesztés közben a
+compose stackben fut (`http://localhost:5175`), élesben ugyanez a kép megy a
+VPS-re:
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --build admin
+```
+
+**Fontos**: a Vite a `VITE_*` értékeket **fordításkor** helyettesíti be, tehát
+ezek nem állíthatók a konténer indításakor - más környezethez újra kell
+építeni a képet:
+
+```bash
+docker build -t snitt-admin:latest \
+  --build-arg VITE_KEYCLOAK_URL=https://auth.snitt.video \
+  --build-arg VITE_KEYCLOAK_REALM=snitt \
+  --build-arg VITE_KEYCLOAK_CLIENT_ID=snitt-admin \
+  --build-arg VITE_API_BASE_URL=https://api.snitt.video \
+  ./admin
+```
+
+A VPS-en érdemes még:
+
+- **HTTPS-t tenni elé** (Caddy/Traefik/nginx reverse proxy) - a Keycloak
+  bejelentkezés éles környezetben HTTPS-t vár,
+- a Keycloak `snitt-admin` kliensénél a valódi domainre állítani a
+  `redirectUris` és `webOrigins` mezőket,
+- **hozzáférést korlátozni** (IP-szűrés vagy VPN): ez belső eszköz, amiben
+  felhasználói adatok és számlázás van. A Keycloak `admin` szerep önmagában is
+  véd, de a felület nyilvános kitettségét nincs miért vállalni.
+
 ## Felépítés
 
 ```
