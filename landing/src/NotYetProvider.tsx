@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import NotYetModal from './components/NotYetModal';
 
-type Kind = 'download' | 'register';
+type Kind = 'download' | 'register' | 'login';
 
 const NotYetContext = createContext<((kind: Kind) => void) | null>(null);
 

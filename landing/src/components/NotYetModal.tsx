@@ -4,7 +4,7 @@ import '../styles.notyet.css';
 
 type Props = {
   /** Melyik gomb nyitotta meg - a szöveg ehhez igazodik. */
-  kind: 'download' | 'register';
+  kind: 'download' | 'register' | 'login';
   onClose: () => void;
 };
 
@@ -45,9 +45,7 @@ export default function NotYetModal({ kind, onClose }: Props) {
           <cite>{t.notYet.cite}</cite>
         </blockquote>
 
-        <p className="notyet-body">
-          {kind === 'download' ? t.notYet.download : t.notYet.register}
-        </p>
+        <p className="notyet-body">{t.notYet[kind]}</p>
 
         <button ref={closeRef} type="button" className="notyet-close" onClick={onClose}>
           {t.notYet.close}

@@ -209,6 +209,7 @@ export type Strings = {
     cite: string;
     download: string;
     register: string;
+    login: string;
     close: string;
     artAlt: string;
   };

@@ -5,7 +5,7 @@ import { fill, useI18n } from '../i18n';
 import Rich from '../i18n/Rich';
 
 export default function Account() {
-  const { ready, authenticated, profile, login } = useAuth();
+  const { authenticated, profile } = useAuth();
   const showNotYet = useNotYet();
   const { t, path } = useI18n();
 
@@ -39,7 +39,7 @@ export default function Account() {
                 >
                   {t.account.register}
                 </button>
-                <button type="button" className="btn btn-outline" onClick={login} disabled={!ready}>
+                <button type="button" className="btn btn-outline" onClick={() => showNotYet('login')}>
                   {t.account.login}
                 </button>
               </div>

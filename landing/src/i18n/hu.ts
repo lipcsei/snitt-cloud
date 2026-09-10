@@ -380,10 +380,12 @@ export const hu: Strings = {
     quote: '„Ne legyetek hamariak!"',
     cite: 'Szirszakáll — A Gyűrűk Ura: A két torony',
     download:
-      'A Snitt még készül: a telepítők hamarosan letölthetők lesznek. Addig is a forráskód nyilvános, és magadnak is lefordíthatod.',
+      'A Snitt még készül - a telepítők hamarosan letölthetők lesznek Windowsra, macOS-re és Linuxra.',
     register:
       'A regisztráció még nem él - a fiókok a későbbi Pro funkciókhoz kellenek majd. Az alkalmazás fiók nélkül is teljes értékű lesz.',
-    close: 'Türelmes leszek',
+    login:
+      'A bejelentkezés még nem él - a fiókok a későbbi Pro funkciókhoz kellenek majd. Az alkalmazás fiók nélkül is teljes értékű lesz.',
+    close: 'Búrárum',
     artAlt: 'Öreg fa illusztráció',
   },
 

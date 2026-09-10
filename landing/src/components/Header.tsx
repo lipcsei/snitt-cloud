@@ -7,7 +7,7 @@ import { useNotYet } from '../NotYetProvider';
 import { useI18n } from '../i18n';
 
 export default function Header() {
-  const { ready, authenticated, profile, login } = useAuth();
+  const { authenticated, profile } = useAuth();
   const showNotYet = useNotYet();
   const { t, path } = useI18n();
 
@@ -37,7 +37,7 @@ export default function Header() {
             </Link>
           ) : (
             <>
-              <button type="button" className="btn btn-ghost" onClick={login} disabled={!ready}>
+              <button type="button" className="btn btn-ghost" onClick={() => showNotYet('login')}>
                 {t.header.login}
               </button>
               <button

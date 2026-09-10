@@ -372,10 +372,12 @@ export const en: Strings = {
     quote: '“Do not be hasty.”',
     cite: 'Treebeard — The Lord of the Rings: The Two Towers',
     download:
-      'Snitt is still being built: the installers will be downloadable soon. In the meantime the source code is public, and you can build it yourself.',
+      'Snitt is still being built - installers for Windows, macOS and Linux will be downloadable soon.',
     register:
       'Sign-up is not live yet - accounts will be for the later Pro features. The app will be fully usable without one.',
-    close: 'I will be patient',
+    login:
+      'Signing in is not live yet - accounts will be for the later Pro features. The app will be fully usable without one.',
+    close: 'Hoom, hom',
     artAlt: 'Illustration of an old tree',
   },
 

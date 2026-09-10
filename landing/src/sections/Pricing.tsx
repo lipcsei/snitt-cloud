@@ -1,4 +1,5 @@
 import { useAuth } from '../AuthProvider';
+import { useNotYet } from '../NotYetProvider';
 import { useT } from '../i18n';
 import Rich from '../i18n/Rich';
 import '../styles.pricing.css';
@@ -8,7 +9,8 @@ import '../styles.pricing.css';
  * ingyenes marad, a fizetős rész az, ami valódi AI-költséget jelent nekünk.
  */
 export default function Pricing() {
-  const { authenticated, register, ready } = useAuth();
+  const { authenticated, ready } = useAuth();
+  const showNotYet = useNotYet();
   const t = useT();
 
   return (
@@ -50,7 +52,7 @@ export default function Pricing() {
             </ul>
             <p className="tier-note">{t.pricing.pro.note}</p>
             {ready && !authenticated && (
-              <button type="button" className="tier-cta" onClick={register}>
+              <button type="button" className="tier-cta" onClick={() => showNotYet('register')}>
                 {t.pricing.pro.cta}
               </button>
             )}
