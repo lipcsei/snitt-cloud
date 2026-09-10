@@ -5,9 +5,9 @@ export const hu: Strings = {
 
   meta: {
     home: {
-      title: 'Snitt — Keresés a saját videótáradban, idézet alapján',
+      title: 'Snitt — Vágd ki a kedvenc jelenetedet a saját videótáradból',
       description:
-        'A Snitt asztali alkalmazás átiratot készít a videóidról, megkeresi a beírt idézetet, és kivágja belőle a jelenetet. Minden helyben marad a gépeden.',
+        'A Snitt asztali alkalmazással kivágod a kedvenc jelenetedet a saját videóidból. És ha nem tudod, melyik filmben hangzik el a mondat, azt is megkeresi. Minden helyben marad a gépeden.',
     },
     install: {
       title: 'Telepítés — Snitt',
@@ -51,9 +51,9 @@ export const hu: Strings = {
 
   hero: {
     pill: 'Asztali alkalmazás · Windows · macOS · Linux',
-    title: 'Megvan a mondat.\nCsak azt nem tudod, *melyik filmben*.',
-    cutLine: 'Vagy tudod — és csak **ki akarod vágni a kedvenc jelenetedet**.',
-    lead: 'A Snitt leiratot készít a videótáradról, megkeresi benne a beírt idézetet — egy kétórás filmben másodpercek alatt —, te pedig a sávot húzva állítod be, hol kezdődjön és hol érjen véget a jelenet. A végeredmény egy kész videófájl a saját gépeden.',
+    title: 'Vágd ki a\n*kedvenc jelenetedet*.',
+    findLine: 'És ha nem tudod, **melyik filmben** hangzik el — elég a mondat, a Snitt megtalálja.',
+    lead: 'A Snitt leiratot készít a videótáradról, és a beírt idézetet egy kétórás filmben is másodpercek alatt megtalálja. A sávot húzva állítod be, hol kezdődjön és hol érjen véget a jelenet — a végeredmény egy kész videófájl a saját gépeden.',
     download: 'Letöltés',
     register: 'Regisztráció',
     facts: [

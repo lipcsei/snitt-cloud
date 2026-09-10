@@ -381,17 +381,18 @@ a {
   margin: 22px 0 14px;
 }
 
-/* A cím második gondolata: nem mindenki keres - sokan pontosan tudják,
-   melyik jelenetet akarják kivágni. Ezért a lead fölött, kiemelve áll. */
-.hero-cut {
-  max-width: 30ch;
+/* Az app a jelenetek kivágásáról szól - ezt mondja a cím. Ez a sor a
+   második gondolat: ha nem jut eszedbe, melyik filmből való, azt is
+   megoldja. A lead fölött, kiemelve áll. */
+.hero-sub {
+  max-width: 34ch;
   margin: 0 0 16px;
   font-size: clamp(1.15rem, 1.9vw, 1.42rem);
   line-height: 1.35;
   color: var(--text);
 }
 
-.hero-cut strong {
+.hero-sub strong {
   font-weight: 700;
   background: var(--accent-grad);
   -webkit-background-clip: text;

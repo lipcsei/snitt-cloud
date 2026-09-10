@@ -5,9 +5,9 @@ export const en: Strings = {
 
   meta: {
     home: {
-      title: 'Snitt — Search your own video library by quote',
+      title: 'Snitt — Cut your favourite scene out of your own video library',
       description:
-        'Snitt is a desktop app that transcribes your videos, finds the line you type, and cuts that scene out for you. Everything stays on your own machine.',
+        'Snitt is a desktop app that cuts your favourite scene out of your own videos. And if you cannot remember which film the line is from, it finds that too. Everything stays on your own machine.',
     },
     install: {
       title: 'Installation — Snitt',
@@ -51,9 +51,9 @@ export const en: Strings = {
 
   hero: {
     pill: 'Desktop app · Windows · macOS · Linux',
-    title: 'You know the line.\nJust not *which film*.',
-    cutLine: 'Or you do know — and you just want to **cut out your favourite scene**.',
-    lead: 'Snitt transcribes your video library, finds the line you type — in a two-hour film, in about a second — and you drag the bar to set exactly where the scene starts and ends. What you get is a finished video file on your own machine.',
+    title: 'Cut out your\n*favourite scene*.',
+    findLine: "And if you can't remember **which film** it's from — type the line, Snitt finds it.",
+    lead: 'Snitt transcribes your video library and finds the line you type — in a two-hour film, in about a second. You drag the bar to set exactly where the scene starts and ends, and what you get is a finished video file on your own machine.',
     download: 'Download',
     register: 'Sign up',
     facts: ['No upload, no cloud', 'One SQLite file on your own machine', 'No account needed'],

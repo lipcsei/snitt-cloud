@@ -5,9 +5,9 @@ export const de: Strings = {
 
   meta: {
     home: {
-      title: 'Snitt — Deine Videosammlung nach Zitaten durchsuchen',
+      title: 'Snitt — Schneide deine Lieblingsszene aus deiner Videosammlung',
       description:
-        'Snitt ist eine Desktop-App, die Transkripte deiner Videos erstellt, das eingetippte Zitat findet und dir die Szene herausschneidet. Alles bleibt auf deinem eigenen Rechner.',
+        'Snitt ist eine Desktop-App, die dir deine Lieblingsszene aus deinen eigenen Videos herausschneidet. Und wenn du nicht mehr weißt, aus welchem Film der Satz stammt, findet sie ihn auch. Alles bleibt auf deinem eigenen Rechner.',
     },
     install: {
       title: 'Installation — Snitt',
@@ -51,9 +51,9 @@ export const de: Strings = {
 
   hero: {
     pill: 'Desktop-App · Windows · macOS · Linux',
-    title: 'Du kennst den Satz.\nNur nicht, *aus welchem Film*.',
-    cutLine: 'Oder du weißt es genau — und willst einfach **deine Lieblingsszene ausschneiden**.',
-    lead: 'Snitt erstellt Transkripte deiner Videosammlung, findet darin den Satz, den du eintippst — in einem Zweistundenfilm in etwa einer Sekunde — und du ziehst die Leiste auf den genauen Anfang und das Ende der Szene. Heraus kommt eine fertige Videodatei auf deinem eigenen Rechner.',
+    title: 'Schneide deine\n*Lieblingsszene* aus.',
+    findLine: 'Und wenn du nicht mehr weißt, **aus welchem Film** — tipp den Satz ein, Snitt findet ihn.',
+    lead: 'Snitt erstellt Transkripte deiner Videosammlung und findet darin den Satz, den du eintippst — in einem Zweistundenfilm in etwa einer Sekunde. Du ziehst die Leiste auf den genauen Anfang und das Ende der Szene, heraus kommt eine fertige Videodatei auf deinem eigenen Rechner.',
     download: 'Herunterladen',
     register: 'Registrieren',
     facts: [

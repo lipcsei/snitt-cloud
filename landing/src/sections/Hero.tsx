@@ -22,8 +22,8 @@ export default function Hero() {
             <Rich text={t.hero.title} />
           </h1>
 
-          <p className="hero-cut">
-            <Rich text={t.hero.cutLine} />
+          <p className="hero-sub">
+            <Rich text={t.hero.findLine} />
           </p>
 
           <p className="lead">{t.hero.lead}</p>
