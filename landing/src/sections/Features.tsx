@@ -39,6 +39,20 @@ const icons: Record<string, ReactNode> = {
       <path d="M9 4.5v2M15 17.5v2" {...S} />
     </>
   ),
+  library: (
+    <>
+      <rect x="3" y="4" width="4" height="16" rx="1.5" {...S} />
+      <rect x="9" y="4" width="4" height="16" rx="1.5" {...S} />
+      <path d="m16 6 4.5 14.5" {...S} />
+    </>
+  ),
+  move: (
+    <>
+      <path d="M12 3v12" {...S} />
+      <path d="m8 11 4 4 4-4" {...S} />
+      <path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" {...S} />
+    </>
+  ),
   lock: (
     <>
       <rect x="4" y="10" width="16" height="10" rx="3" {...S} />
@@ -48,7 +62,7 @@ const icons: Record<string, ReactNode> = {
 };
 
 /** A kártyák sorrendje kötött: az ikonok a nyelvi tábla elemeihez tartoznak. */
-const ICON_ORDER = ['quote', 'subs', 'mic', 'brain', 'cut', 'lock'];
+const ICON_ORDER = ['quote', 'subs', 'mic', 'brain', 'cut', 'library', 'move', 'lock'];
 
 export default function Features() {
   const t = useT();

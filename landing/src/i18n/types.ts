@@ -16,6 +16,7 @@ type Two<T> = readonly [T, T];
 type Three<T> = readonly [T, T, T];
 type Four<T> = readonly [T, T, T, T];
 type Six<T> = readonly [T, T, T, T, T, T];
+type Eight<T> = readonly [T, T, T, T, T, T, T, T];
 
 export type MetaText = { title: string; description: string };
 
@@ -120,6 +121,19 @@ export type Strings = {
     imageAlt: string;
   };
 
+  /** Képernyőképek az alkalmazásról. */
+  shots: {
+    eyebrow: string;
+    title: string;
+    sub: string;
+    items: {
+      search: ShotItem;
+      editor: ShotItem;
+      clips: ShotItem;
+      library: ShotItem;
+    };
+  };
+
   hero: {
     pill: string;
     title: string;
@@ -162,7 +176,7 @@ export type Strings = {
     eyebrow: string;
     title: string;
     sub: string;
-    items: Six<Feature>;
+    items: Eight<Feature>;
   };
 
   pricing: {
@@ -270,4 +284,11 @@ export type Strings = {
     backToDownloads: string;
     backToHome: string;
   };
+};
+
+/** Egy képernyőkép: fülfelirat, magyarázat és alt szöveg. */
+export type ShotItem = {
+  title: string;
+  body: string;
+  alt: string;
 };

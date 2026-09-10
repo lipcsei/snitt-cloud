@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Hero from '../sections/Hero';
 import HowItWorks from '../sections/HowItWorks';
+import Screenshots from '../sections/Screenshots';
 import Privacy from '../sections/Privacy';
 import Features from '../sections/Features';
 import Pricing from '../sections/Pricing';
@@ -26,6 +27,7 @@ export default function Landing() {
     <main>
       <Hero />
       <HowItWorks />
+      <Screenshots />
       <Privacy />
       <Features />
       <Pricing />

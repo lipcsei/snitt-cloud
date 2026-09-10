@@ -55,6 +55,34 @@ export const en: Strings = {
       'Snitt share image: the words “Cut out your favourite scene.” with the snitt.video address, on a dark background.',
   },
 
+  shots: {
+    eyebrow: 'What it looks like',
+    title: 'Four screens, nothing spare',
+    sub: 'The app runs on your own machine. These shots come from a real video library.',
+    items: {
+      search: {
+        title: 'Search',
+        body: 'Type the line and you get the film and the minute where it is said. If a film has several transcripts, it searches all of them — and shows which subtitle and which language produced the hit.',
+        alt: 'Snitt search: results for the quote “tünde szemed mit lát”, with film title, timestamp and transcript source.',
+      },
+      editor: {
+        title: 'Cutting',
+        body: 'It suggests a range straight from the hit. The player shows exactly what you are about to cut, and you drag the bar to land on the right frame — or just click the sentences.',
+        alt: 'The Snitt editor: transcript on the left with the selected line, player and timeline on the right.',
+      },
+      clips: {
+        title: 'My clips',
+        body: 'What you cut once stays here. Play it, search it, save it again any time — no re-cutting. This list only exists on your machine.',
+        alt: 'The clips page: finished clips in a grid, with poster images and quotes.',
+      },
+      library: {
+        title: 'Library',
+        body: 'Add videos from a folder or a link. You can see what takes up how much space — and which parts you can throw away, because they are rebuilt when needed.',
+        alt: 'The Snitt library: storage breakdown, import options and the added videos.',
+      },
+    },
+  },
+
   hero: {
     pill: 'Desktop app · Windows · macOS · Linux',
     title: 'Cut out your\n*favourite scene*.',
@@ -233,6 +261,14 @@ export const en: Strings = {
         body: 'From a hit it suggests a range straight out of the transcript, and you adjust it by dragging on the timeline. The output is a video file you save wherever you like.',
       },
       {
+        title: 'Your clips in one place',
+        body: 'What you cut once stays: play it, search among them, save it again any time — no re-cutting. The list only exists on your machine.',
+      },
+      {
+        title: 'Move without reprocessing',
+        body: 'Your library exports to a single file and imports on another machine. The transcripts come along, so you never re-run Whisper on what is already done.',
+      },
+      {
         title: 'Everything stays local',
         body: 'No server, no upload, no forced account. The index is a single SQLite file on your machine, and your videos stay exactly where they have always been.',
       },
@@ -241,7 +277,7 @@ export const en: Strings = {
 
   pricing: {
     title: 'What is free, and why is there a paid tier?',
-    lead: 'Search and cutting stay free - they run on your machine and cost us nothing. The AI features, on the other hand, run up real token costs, which is why they need a subscription. There is no trick in it.',
+    lead: 'Search and cutting stay free - they run on your machine and cost us nothing. So does meaning-based search, if you run a local model for it. The subscription covers what genuinely costs us money: the cloud AI, per token. No catch.',
     free: {
       name: 'Free',
       price: '$0',
@@ -252,6 +288,8 @@ export const en: Strings = {
         'Whisper transcripts from the actual audio track',
         'Transcripts in several languages per film',
         'Clip cutting to a file, with a hand-adjustable range',
+        'A searchable library of the clips you made',
+        '**Meaning-based search** with a locally running model — no key, no internet',
       ],
       note: 'One cut comes with one short ad - that is what keeps the development going.',
     },
@@ -261,7 +299,7 @@ export const en: Strings = {
       price: 'coming soon',
       priceNote: 'monthly',
       items: [
-        '**AI search:** it finds not only the words but the scene you have in mind - from a description too',
+        '**AI search with no setup:** the cloud model is more accurate, and you install nothing for it',
         '**Video understanding:** what happens in the scene, who is in it, what the dialogue is about',
         'Ask your video library questions instead of only searching it',
         'No ads',

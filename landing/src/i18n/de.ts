@@ -55,6 +55,34 @@ export const de: Strings = {
       'Snitt-Teilenbild: der Satz „Schneide deine Lieblingsszene aus.“ mit der Adresse snitt.video auf dunklem Hintergrund.',
   },
 
+  shots: {
+    eyebrow: 'So sieht es aus',
+    title: 'Vier Bildschirme, nichts Überflüssiges',
+    sub: 'Die App läuft auf deinem eigenen Rechner. Diese Aufnahmen stammen aus einer echten Videosammlung.',
+    items: {
+      search: {
+        title: 'Suche',
+        body: 'Du tippst den Satz ein und bekommst den Film und die Minute, in der er fällt. Hat ein Film mehrere Transkripte, wird in allen gesucht – und du siehst, welcher Untertitel und welche Sprache den Treffer geliefert hat.',
+        alt: 'Die Snitt-Suche: Treffer für das Zitat „tünde szemed mit lát“, mit Filmtitel, Zeitpunkt und Transkriptquelle.',
+      },
+      editor: {
+        title: 'Schnitt',
+        body: 'Aus dem Treffer wird sofort ein Bereich vorgeschlagen. Der Player zeigt genau das, was du herausschneiden wirst, und mit der Leiste triffst du das richtige Bild – oder du klickst einfach auf die Sätze.',
+        alt: 'Der Snitt-Editor: links das Transkript mit dem markierten Satz, rechts Player und Zeitleiste.',
+      },
+      clips: {
+        title: 'Meine Clips',
+        body: 'Was du einmal geschnitten hast, bleibt hier. Abspielen, durchsuchen, jederzeit erneut speichern – ohne neuen Schnitt. Diese Liste existiert nur auf deinem Rechner.',
+        alt: 'Die Clip-Seite: fertige Clips im Raster, mit Vorschaubildern und Zitaten.',
+      },
+      library: {
+        title: 'Sammlung',
+        body: 'Videos kommen aus einem Ordner oder von einem Link. Du siehst, was wie viel Platz braucht – und was du bedenkenlos löschen kannst, weil es bei Bedarf neu entsteht.',
+        alt: 'Die Snitt-Sammlung: Speicherübersicht, Importmöglichkeiten und die aufgenommenen Videos.',
+      },
+    },
+  },
+
   hero: {
     pill: 'Desktop-App · Windows · macOS · Linux',
     title: 'Schneide deine\n*Lieblingsszene* aus.',
@@ -237,6 +265,14 @@ export const de: Strings = {
         body: 'Aus dem Treffer schlägt Snitt anhand des Transkripts sofort einen Bereich vor, den du auf der Zeitleiste per Ziehen anpasst. Heraus kommt eine Videodatei, die du speicherst, wohin du willst.',
       },
       {
+        title: 'Fertige Clips an einem Ort',
+        body: 'Was du einmal geschnitten hast, bleibt: abspielen, durchsuchen, jederzeit erneut speichern – ohne neuen Schnitt. Die Liste existiert nur auf deinem Rechner.',
+      },
+      {
+        title: 'Umziehen ohne neue Verarbeitung',
+        body: 'Deine Sammlung lässt sich in eine einzige Datei exportieren und auf einem anderen Rechner importieren. Die Transkripte kommen mit – Whisper muss nichts wiederholen, was schon fertig ist.',
+      },
+      {
         title: 'Alles bleibt lokal',
         body: 'Kein Server, kein Upload, kein Kontozwang. Der Index ist eine einzige SQLite-Datei auf deinem Rechner, und deine Videos bleiben genau dort, wo sie schon immer lagen.',
       },
@@ -245,7 +281,7 @@ export const de: Strings = {
 
   pricing: {
     title: 'Was ist kostenlos, und wofür gibt es einen Bezahltarif?',
-    lead: 'Suche und Schnitt bleiben kostenlos - sie laufen auf deinem Rechner und kosten uns nichts. Die KI-Funktionen dagegen verursachen echte Tokenkosten, deshalb gibt es sie nur im Abo. Ein Trick steckt nicht dahinter.',
+    lead: 'Suche und Schnitt bleiben kostenlos - sie laufen auf deinem Rechner und kosten uns nichts. Auch die Suche nach Bedeutung, wenn du dafür ein lokales Modell laufen lässt. Das Abo deckt das ab, was uns wirklich Geld kostet: die Cloud-KI, pro Token. Kein Haken dabei.',
     free: {
       name: 'Kostenlos',
       price: '0 €',
@@ -256,6 +292,8 @@ export const de: Strings = {
         'Whisper-Transkripte aus der echten Tonspur',
         'Mehrsprachige Transkripte pro Film',
         'Clip-Schnitt in eine Datei, mit dem Bereich von Hand einstellbar',
+        'Eine durchsuchbare Sammlung deiner fertigen Clips',
+        '**Suche nach Bedeutung** mit einem lokal laufenden Modell – ohne Schlüssel, ohne Internet',
       ],
       note: 'Zu einem Schnitt gehört eine kurze Werbeeinblendung - davon finanzieren wir die Entwicklung.',
     },
@@ -265,7 +303,7 @@ export const de: Strings = {
       price: 'demnächst',
       priceNote: 'monatlich',
       items: [
-        '**KI-Suche:** findet nicht nur die Wörter, sondern die Szene, an die du denkst - auch aus einer Umschreibung',
+        '**KI-Suche ohne Einrichtung:** das Cloud-Modell ist genauer, und du musst dafür nichts installieren',
         '**Videoverständnis:** was in der Szene passiert, wer darin vorkommt, worum es im Dialog geht',
         'Du kannst deine Videosammlung fragen, nicht nur durchsuchen',
         'Keine Werbung',

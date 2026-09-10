@@ -55,6 +55,34 @@ export const hu: Strings = {
       'Snitt megosztási kép: „Vágd ki a kedvenc jelenetedet." felirat a snitt.video címmel, sötét háttéren.',
   },
 
+  shots: {
+    eyebrow: 'Így néz ki',
+    title: 'Négy képernyő, semmi felesleges',
+    sub: 'Az alkalmazás a saját gépeden fut. Ezek a képek egy valódi videótárból készültek.',
+    items: {
+      search: {
+        title: 'Keresés',
+        body: 'Beírod a mondatot, és megkapod, melyik filmben és hány percnél hangzik el. Ha több leirat is van hozzá, mindegyikben keres – látszik, melyik felirat és melyik nyelv adta a találatot.',
+        alt: 'A Snitt keresője: a „tünde szemed mit lát” idézet találatai, filmcímmel, időponttal és a leirat forrásával.',
+      },
+      editor: {
+        title: 'Vágás',
+        body: 'A találatból rögtön javasol egy tartományt. A lejátszó azt mutatja, amit ki fogsz vágni, a sávot húzva pedig képkockára pontosan igazíthatod – vagy egyszerűen a mondatokra kattintasz.',
+        alt: 'A Snitt vágószerkesztője: balra a leirat kijelölt mondattal, jobbra a lejátszó és az idővonal.',
+      },
+      clips: {
+        title: 'Snittjeim',
+        body: 'Amit egyszer kivágtál, itt marad. Lejátszhatod, kereshetsz benne, és bármikor elmentheted újra – vágás nélkül. Ez a lista csak a te gépeden létezik.',
+        alt: 'A Snittjeim oldal: a kész klipek rácsban, borítóképpel és az idézettel.',
+      },
+      library: {
+        title: 'Videótár',
+        body: 'Mappából vagy linkről veszed fel a videóidat. Látod, mi mennyi helyet foglal – és azt is, mi az, amit nyugodtan kidobhatsz, mert újra elkészül.',
+        alt: 'A Snitt videótára: tárhely-kimutatás, importálási lehetőségek és a felvett videók.',
+      },
+    },
+  },
+
   hero: {
     pill: 'Asztali alkalmazás · Windows · macOS · Linux',
     title: 'Vágd ki a\n*kedvenc jelenetedet*.',
@@ -237,6 +265,14 @@ export const hu: Strings = {
         body: 'A találatból az átirat alapján rögtön javasol egy tartományt, amit az idővonalon húzással igazítasz. A kimenet egy videófájl, amit oda mentesz, ahová akarsz.',
       },
       {
+        title: 'A kész snittek egy helyen',
+        body: 'Amit egyszer kivágtál, megmarad: lejátszhatod, kereshetsz köztük, és bármikor elmentheted újra – vágás nélkül. A lista csak a te gépeden létezik.',
+      },
+      {
+        title: 'Költözés újrafeldolgozás nélkül',
+        body: 'A tárad kivihető egyetlen fájlba, és egy másik gépen behozható. A leiratok is átjönnek, tehát nem kell újra végigfuttatni a whispert azon, ami már kész.',
+      },
+      {
         title: 'Minden helyben marad',
         body: 'Nincs szerver, nincs feltöltés, nincs fiókkényszer. Az index egyetlen SQLite fájl a gépeden, a videóid pedig ott maradnak, ahol eddig is voltak.',
       },
@@ -245,7 +281,7 @@ export const hu: Strings = {
 
   pricing: {
     title: 'Mi ingyenes, és miért van fizetős rész?',
-    lead: 'A keresés és a kivágás ingyenes marad - ez a gépeden fut, nekünk nem kerül pénzbe. Az AI-alapú funkciók viszont valódi tokenköltséget jelentenek, ezért csak előfizetéssel érhetők el. Nincs benne trükk.',
+    lead: 'A keresés és a kivágás ingyenes marad - ez a gépeden fut, nekünk nem kerül pénzbe. Még a jelentés szerinti keresés is, ha futtatsz hozzá egy helyi modellt. Az előfizetés azt fedezi, ami nekünk tényleg pénzbe kerül: a felhős AI-t, tokenenként. Nincs benne trükk.',
     free: {
       name: 'Ingyenes',
       price: '0 Ft',
@@ -256,6 +292,8 @@ export const hu: Strings = {
         'Whisper átirat a tényleges hangsávból',
         'Több nyelvű leiratok filmenként',
         'Klipvágás fájlba, kézzel állítható tartománnyal',
+        'A kész snittek könyvtára, kereséssel',
+        '**Jelentés szerinti keresés** helyben futó modellel – kulcs és internet nélkül',
       ],
       note: 'Egy kivágás egy rövid hirdetés megtekintésével jár - ebből tartjuk fenn a fejlesztést.',
     },
@@ -265,7 +303,7 @@ export const hu: Strings = {
       price: 'hamarosan',
       priceNote: 'havidíjas',
       items: [
-        '**AI-keresés:** nem csak a szavakat találja meg, hanem a jelenetet is, amire gondolsz - körülírásból is',
+        '**Beállítás nélküli AI-keresés:** a felhős modell pontosabb, és nem kell hozzá semmit telepítened',
         '**Videóértelmezés:** mi történik a jelenetben, kik szerepelnek benne, miről szól a párbeszéd',
         'Kérdezhetsz a videótáradtól, nem csak kereshetsz benne',
         'Nincsenek hirdetések',

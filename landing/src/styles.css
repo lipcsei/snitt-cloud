@@ -1425,3 +1425,29 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- képernyőképek ----
+   Fülekkel és nem egymás alatt: a négy kép ugyanannak a programnak négy arca,
+   nem négy külön funkció. Így egy pillanat alatt átválthatók, és a kép mérete
+   is marad akkora, hogy tényleg lehessen látni rajta valamit. */
+.shot-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 18px; }
+.shot-tab {
+  padding: 8px 16px; border-radius: 999px; font-size: .9rem; cursor: pointer;
+  border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+}
+.shot-tab:hover { color: var(--text); border-color: var(--border-strong); }
+.shot-tab.on { color: #fff; background: var(--accent-grad); border-color: transparent; }
+
+.shot-figure { margin: 0; min-height: 280px; }
+.shot-figure img {
+  display: block; width: 100%; height: auto; border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow); background: #0a0b0f;
+}
+.shot-figure figcaption {
+  margin-top: 14px; color: var(--muted); font-size: .92rem; line-height: 1.6; max-width: 70ch;
+}
+
+@media (max-width: 640px) {
+  .shot-tabs { gap: 6px; }
+  .shot-tab { padding: 7px 12px; font-size: .84rem; }
+}
