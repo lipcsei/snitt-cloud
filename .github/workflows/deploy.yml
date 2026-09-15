@@ -32,6 +32,11 @@ jobs:
     # workflow_run esetén csak akkor fusson, ha az előző CI zöld volt -
     # egy piros CI-ból soha ne menjen ki semmi élesre.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # A secretek (VPS_HOST/VPS_USER/VPS_SSH_KEY/VPS_ENV_PROD) a "production"
+    # Environmenthez vannak felvéve a repo Settings-jében - environment
+    # secretek NEM látszanak egy jobnak, ha az nem hivatkozik rájuk ezzel a
+    # mezővel (ezért jött ki mind a négy 0 hosszúnak a debug lépésben).
+    environment: production
     steps:
       # IDEIGLENES debug lépés - csak a secretek HOSSZÁT írja ki, a
       # tartalmukat nem, hogy kiderüljön melyik érkezik üresen. Töröld ezt a
