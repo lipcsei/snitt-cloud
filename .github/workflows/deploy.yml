@@ -1,0 +1,83 @@
+# Automatikus kitelepítés a VPS-re, minden sikeres main-ági CI után.
+#
+# A titkok (jelszavak, kliens secret) forrása a VPS_ENV_PROD GitHub secret -
+# ez a deploy/.env.prod.example alapján kitöltött fájl TELJES tartalma.
+# Minden kitelepítéskor ez írja felül a szerveren a deploy/.env.prod-ot,
+# tehát egy jelszó cseréjéhez elég a GitHub secretet frissíteni és a
+# workflow-t (újra)futtatni - nem kell SSH-n szerkeszteni semmit.
+#
+# Szükséges repository secretek (Settings → Secrets and variables →
+# Actions), lásd docs/VPS-TELEPITES.md:
+#   VPS_HOST        a szerver IP-je vagy hostneve
+#   VPS_USER        a deploy felhasználó (NE root)
+#   VPS_SSH_KEY     a deploy felhasználóhoz tartozó PRIVÁT kulcs (ed25519)
+#   VPS_SSH_PORT    opcionális, alapértelmezés 22
+#   VPS_ENV_PROD    a deploy/.env.prod fájl teljes, kitöltött tartalma
+
+name: Deploy VPS
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  # Kézi újrafuttatás, ha a szerveren kellett valamit tisztázni, vagy csak
+  # a VPS_ENV_PROD secret frissítése után kell újraküldeni build nélkül.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Kitelepítés SSH-n
+    runs-on: ubuntu-latest
+    # workflow_run esetén csak akkor fusson, ha az előző CI zöld volt -
+    # egy piros CI-ból soha ne menjen ki semmi élesre.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      # Fájlba írjuk a runneren, hogy utána scp-vel egyben át tudjuk vinni -
+      # "printf '%s'" (nem echo), hogy a fájl tartalma karakterre pontosan a
+      # secret értéke legyen, sortörés-értelmezés vagy escape-elés nélkül.
+      - name: .env.prod előállítása a secretből
+        env:
+          ENV_PROD: ${{ secrets.VPS_ENV_PROD }}
+        run: printf '%s' "$ENV_PROD" > .env.prod.upload
+
+      - name: .env.prod feltöltése a szerverre
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          source: ".env.prod.upload"
+          target: "/opt/snitt-cloud/deploy/"
+
+      - name: Kitelepítés
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/snitt-cloud
+
+            # A frissen feltöltött .env.prod.upload-ot a helyére tesszük,
+            # MIELŐTT git reset-elünk - a reset --hard csak a verziókövetett
+            # fájlokat állítja vissza, a nem verziókövetett (gitignore-olt)
+            # deploy/.env.prod-hoz nem nyúl, tehát a sorrend itt nem számít,
+            # de így korábban a helyén van, ha a compose lépés bármit olvas.
+            mv deploy/.env.prod.upload deploy/.env.prod
+            chmod 600 deploy/.env.prod
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            # A "landing" szándékosan hiányzik: az GitHub Pages-en fut.
+            docker compose --env-file deploy/.env.prod \
+              -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
+              up -d --build postgres keycloak account admin caddy
+
+            # A régi image-rétegek felszaporodnának minden deploy-jal.
+            docker image prune -f

@@ -1,0 +1,77 @@
+# Éles felülbírálás a docker-compose.yml fölé - VPS-en ezzel a kettővel
+# együtt kell indítani, SOHA önmagában.
+#
+# Használat (a repo gyökeréből, a VPS-en):
+#   docker compose --env-file deploy/.env.prod \
+#     -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
+#     up -d --build postgres keycloak account admin caddy
+#
+# A "landing" szándékosan hiányzik a fenti listából: az élesben GitHub
+# Pages-en fut (lásd .github/workflows/ci.yml), ezen a VPS-en nincs rá
+# szükség - ha mégis felhoznád, csak dupla karbantartás és felesleges
+# TLS-tanúsítvány lenne.
+#
+# Mit csinál ez a fájl a fejlesztői composehoz képest:
+#  - a Postgres/Keycloak/account/admin portjait 127.0.0.1-re köti: kifelé
+#    csak a Caddy nyit 80/443-at, TLS-sel - a nyers HTTP végpontok névvel
+#    ne legyenek elérhetők a nyílt internetről.
+#  - a Keycloakot a valódi domainre és a Caddy proxy mögé állítja
+#    (KC_HOSTNAME_STRICT + KC_PROXY_HEADERS, lásd a kommentet lent).
+#  - felhozza a Caddyt, ami automatikusan kér/újít Let's Encrypt
+#    tanúsítványt minden domainhez a deploy/Caddyfile alapján.
+
+services:
+  postgres:
+    # A sima "ports:" listákat a compose EGYBEFŰZI a docker-compose.yml
+    # eredeti bejegyzésével, nem cseréli le - marad a nyilvános port is,
+    # ha itt nem "!override"-oljuk explicit módon.
+    ports: !override
+      - "127.0.0.1:5432:5432"
+
+  keycloak:
+    ports: !override
+      - "127.0.0.1:8081:8081"
+    environment:
+      # A KC_HOSTNAME-nek a böngésző által látott, valódi címnek kell lennie
+      # (pl. https://auth.snitt.video) - ez kerül a tokenek "iss" mezőjébe
+      # is, aminek egyeznie kell az account szolgáltatás KEYCLOAK_ISSUER
+      # értékével (lásd deploy/.env.prod.example).
+      KC_HOSTNAME: ${PUBLIC_KEYCLOAK_URL:?állítsd be a PUBLIC_KEYCLOAK_URL-t, pl. https://auth.snitt.video}
+      KC_HOSTNAME_STRICT: "true"
+      # A Caddy TLS-t terminál és HTTP-n adja tovább a kérést - enélkül a
+      # Keycloak az X-Forwarded-* fejlécek nélkül HTTP-nek hinné saját magát,
+      # és rossz (http://) linkeket generálna, illetve secure cookie-t sem
+      # állítana be.
+      KC_PROXY_HEADERS: xforwarded
+
+  account:
+    ports: !override
+      - "127.0.0.1:8090:8090"
+
+  admin:
+    ports: !override
+      - "127.0.0.1:5175:80"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      PUBLIC_KEYCLOAK_URL: ${PUBLIC_KEYCLOAK_URL:?}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:?}
+      PUBLIC_ADMIN_URL: ${PUBLIC_ADMIN_URL:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - keycloak
+      - account
+      - admin
+
+volumes:
+  caddy-data:
+  caddy-config:

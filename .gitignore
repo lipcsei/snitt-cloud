@@ -7,6 +7,8 @@ dist/
 .env
 .env.*.local
 .env.local
+deploy/.env.prod
+deploy/.env.prod.upload
 
 # IDE / OS
 .idea/
