@@ -33,6 +33,21 @@ jobs:
     # egy piros CI-ból soha ne menjen ki semmi élesre.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
+      # IDEIGLENES debug lépés - csak a secretek HOSSZÁT írja ki, a
+      # tartalmukat nem, hogy kiderüljön melyik érkezik üresen. Töröld ezt a
+      # lépést, ha minden secret rendben megjelenik (hossz > 0).
+      - name: "DEBUG: secretek hossza"
+        env:
+          H: ${{ secrets.VPS_HOST }}
+          U: ${{ secrets.VPS_USER }}
+          K: ${{ secrets.VPS_SSH_KEY }}
+          E: ${{ secrets.VPS_ENV_PROD }}
+        run: |
+          echo "VPS_HOST hossza: ${#H}"
+          echo "VPS_USER hossza: ${#U}"
+          echo "VPS_SSH_KEY hossza: ${#K}"
+          echo "VPS_ENV_PROD hossza: ${#E}"
+
       # Fájlba írjuk a runneren, hogy utána scp-vel egyben át tudjuk vinni -
       # "printf '%s'" (nem echo), hogy a fájl tartalma karakterre pontosan a
       # secret értéke legyen, sortörés-értelmezés vagy escape-elés nélkül.
