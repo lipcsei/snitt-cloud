@@ -18,7 +18,10 @@ kötelező bejelentkezés, nincs hálózati hívás a működéshez.
 - **admin** (React, `admin/`, `:5175`) – belső admin felület: felhasználók, előfizetések,
   számlázás. Nem publikus; a Keycloak `admin` realm szerepéhez kötött.
 - **Keycloak** – az identitásszolgáltató. Ő birtokolja a felhasználót: regisztráció, jelszó,
-  e-mail-cím, a stabil `sub` azonosító. Saját kódot erre nem írunk.
+  e-mail-cím, a stabil `sub` azonosító. Saját kódot erre nem írunk. **Nem ebben a repóban fut**:
+  megosztott szolgáltatás ([`sso`](https://github.com/lipcsei/sso)), amit más appok (jelenleg a
+  `breath`) is használnak – ez a repo egy `snitt` nevű saját realmet kap benne, elkülönítve a
+  többi app felhasználóitól.
 - **account szolgáltatás** (Go, `services/account/`) – az egyetlen saját backend. A Keycloak
   által kiállított JWT-t ellenőrzi, és Postgresben tárolja az alkalmazás-oldali profilt
   (megjelenítendő név, nyelv), az **entitlementeket** (mely extra funkciók járnak), valamint az

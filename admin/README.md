@@ -10,8 +10,10 @@ desktop app fiók nélkül, teljesen önállóan működik – lásd
 
 ## Futtatás
 
-Kell hozzá a futó fejlesztői stack (Postgres + Keycloak + account szolgáltatás). A repo
-gyökeréből:
+Kell hozzá a futó fejlesztői stack: a megosztott Keycloak
+([`sso`](https://github.com/lipcsei/sso) repó, `docker compose up -d` –
+ezt indítsd ELŐSZÖR), majd ennek a repónak a Postgres + account
+szolgáltatása. A repo gyökeréből:
 
 ```bash
 docker compose -f deploy/docker-compose.yml up --build
@@ -112,8 +114,8 @@ jogosultságai és a számlái viszont érintetlenek maradnak – ez csak a bel�
 app nála fiók nélkül továbbra is működik, csak a felhő funkciók állnak le.
 
 > Ehhez a Keycloak service accountjának `manage-users` szerep kell. Ha a realm még a szerep
-> bevezetése előtt jött létre, a művelet `502`-t ad; a pótlás egy lépés:
-> [`deploy/scripts/grant-manage-users.sh`](../deploy/scripts/grant-manage-users.sh).
+> bevezetése előtt jött létre, a művelet `502`-t ad; a pótlás egy lépés az `sso` repóban:
+> [`scripts/grant-manage-users.sh`](https://github.com/lipcsei/sso/blob/main/scripts/grant-manage-users.sh).
 
 ## A fizetési szolgáltató illesztési pontja
 

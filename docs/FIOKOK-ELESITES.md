@@ -13,6 +13,16 @@ kínálnánk.
 
 Ugyanez kell az e-mail-cím igazolásához is (lásd 2. pont).
 
+**A Keycloak most a megosztott [sso](https://github.com/lipcsei/sso) repóban
+fut** (`realms/snitt-realm.json`-jának `smtpServer` blokkja a `mailpit`
+fejlesztői mockra mutat – az is abban a repóban van, `http://localhost:8025`
+a webes felülete – minden "kiküldött" levelet ott lehet megnézni, valódi
+SMTP vagy külső szolgáltatás nélkül). Ez **csak fejlesztéshez** való: az sso
+repó `docker-compose.prod.yml`-je nem hozza fel a `mailpit`-et, tehát
+élesben ez a beállítás hatástalan levélküldésre – a valódi SMTP-t a
+Keycloak admin konzolján (Realm settings → Email) kell beállítani, mielőtt
+igazi felhasználó regisztrál.
+
 Keycloak → Realm settings → Email.
 
 ## 2. `verifyEmail: true`
@@ -43,21 +53,26 @@ saját admint.
 
 ## 6. Keycloak bootstrap admin
 
-A compose `admin`/`admin` párost ad (`KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`).
-Élesben ezt is cseréld, és a Keycloak admin felületét ne tedd ki a nyilvános
-internetre.
+A `admin`/`admin` párost (`KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`) most
+a megosztott [sso](https://github.com/lipcsei/sso) repó saját `.env.prod`-ja
+adja, nem ez a repó. Élesben ott cseréld, és a Keycloak admin felületét ne
+tedd ki a nyilvános internetre.
 
 ## 7. Mentés – és próbáld is ki
 
-A `deploy/scripts/backup.sh` a Postgres két adatbázisát menti: a Keycloakét
-(felhasználók, jelszó-lenyomatok) és az account szolgáltatásét (profilok,
-előfizetések, számlák). Ez az **egyetlen adat az egész rendszerben, ami nem
-újratermelhető** – a landing statikus, a képek újraépíthetők, a felhasználók
-videói pedig a saját gépükön vannak.
+A `deploy/scripts/backup.sh` itt csak az account szolgáltatás adatbázisát
+menti (profilok, előfizetések, számlák). A Keycloak adatbázisa (felhasználók,
+jelszó-lenyomatok, kliensbeállítások, mindkét app realmje) külön van, a
+megosztott [sso](https://github.com/lipcsei/sso) repóban – annak saját
+`scripts/backup.sh`-ja menti, külön cronnal. Mindkettő **nem
+újratermelhető adat** – a landing statikus, a képek újraépíthetők, a
+felhasználók videói pedig a saját gépükön vannak – tehát mindkét cront be
+kell állítani.
 
 ```bash
 # naponta hajnali 3-kor
 0 3 * * * /opt/snitt/deploy/scripts/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
+0 3 * * * /opt/sso/scripts/backup.sh /var/backups/sso >> /var/log/sso-backup.log 2>&1
 ```
 
 Két dolog, ami nélkül a mentés csak illúzió:
@@ -83,7 +98,9 @@ Két dolog, ami nélkül a mentés csak illúzió:
   landing és az alkalmazás.
 - **A desktop kliens** titok nélküli, PKCE-vel – asztali alkalmazásba nem
   lehet titkot csomagolni.
-- **A Keycloak a Postgresbe ír**, saját adatbázisba. Ez nem apróság: a
-  `start-dev` alapból a konténerbe ágyazott H2-t használná, kötet nélkül –
-  minden újralétrehozáskor elveszne minden felhasználó és jelszó, és menteni
-  sem lenne mit.
+- **A Keycloak a Postgresbe ír**, saját adatbázisba (a megosztott
+  [sso](https://github.com/lipcsei/sso) repóban, saját Postgresébe – nem
+  ennek a repónak a Postgresébe). Ez nem apróság: a `start-dev` alapból a
+  konténerbe ágyazott H2-t használná, kötet nélkül – minden
+  újralétrehozáskor elveszne minden felhasználó és jelszó, és menteni sem
+  lenne mit.

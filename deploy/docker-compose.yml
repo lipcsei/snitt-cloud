@@ -1,10 +1,9 @@
-# Snitt felhő oldali fejlesztői stack: Postgres + Keycloak + account szolgáltatás.
+# Snitt felhő oldali fejlesztői stack: Postgres + account szolgáltatás.
 # Indítás a repo gyökeréből:  docker compose -f deploy/docker-compose.yml up --build
 #
 # Minden rész saját konténerben fut, ahogy élesben is:
 #
 #   postgres :5432   adatbázis
-#   keycloak :8081   azonosítás
 #   account  :8090   API (Go)
 #   admin    :5175   belső admin felület (nginx + SPA)
 #   landing  :8088   marketing oldal (nginx + SPA)
@@ -12,6 +11,14 @@
 # A landing élesben GitHub Pagesre megy; ez a konténer a helyi
 # megtekintéshez van, és a VALÓDI production buildet szolgálja ki (a Vite dev
 # szerverrel szemben, ami a hoston `npm run dev`-vel indul).
+#
+# Keycloak és a hozzá tartozó Mailpit (fejlesztői e-mail mock) NEM ebben a
+# stackben futnak - lásd https://github.com/lipcsei/sso: egyetlen Keycloak
+# szolgáltatja mind ezt, mind a breath appot, saját adatbázissal. Azt a
+# stacket kell ELŐSZÖR elindítani (`docker compose up -d` abban a repóban) -
+# az hozza létre az "sso-net" hálózatot, amihez `account` lent csatlakozik.
+# Enélkül ez a `docker compose up` "network sso-net declared as external,
+# but could not be found" hibával elhasal.
 
 name: snitt
 
@@ -27,46 +34,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # A Keycloak külön adatbázisa az első induláskor jön létre.
-      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-snitt} -d ${POSTGRES_DB:-snitt}"]
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 10s
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    command: ["start-dev", "--import-realm"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      # A Keycloak SAJÁT adatbázisba ír, a Postgresbe.
-      #
-      # Enélkül a start-dev a konténerbe ágyazott H2-t használná, kötet
-      # nélkül: minden újralétrehozáskor elveszne MINDEN felhasználó és
-      # jelszó. Fejlesztésnél bosszantó, élesben végzetes - és menteni sem
-      # lenne mit. Külön adatbázis (nem külön séma), hogy a mentés és a
-      # visszaállítás is szétválasztható legyen.
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB:-keycloak}
-      KC_DB_USERNAME: ${POSTGRES_USER:-snitt}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-snitt}
-      KC_HTTP_PORT: "8081"
-      # Az issuer URL-nek meg kell egyeznie azzal, amit a böngésző és az account
-      # szolgáltatás is lát, különben a token issuer ellenőrzése elbukik.
-      KC_HOSTNAME: http://localhost:8081
-      KC_HOSTNAME_STRICT: "false"
-      KC_HEALTH_ENABLED: "true"
-    ports:
-      - "8081:8081"
-    volumes:
-      - ../keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
-      - ../keycloak/themes/snitt:/opt/keycloak/themes/snitt:ro
 
   account:
     build:
@@ -76,21 +49,22 @@ services:
       HTTP_ADDR: ":8090"
       DATABASE_URL: postgres://${POSTGRES_USER:-snitt}:${POSTGRES_PASSWORD:-snitt}@postgres:5432/${POSTGRES_DB:-snitt}?sslmode=disable
       # A tokenek issuer claimje az, amit a böngésző lát (localhost:8081), a
-      # discovery viszont a compose-hálózaton belülről, a "keycloak" hoszton
-      # történik - ezért a két URL szándékosan eltér.
+      # discovery viszont az sso-net hálózaton belülről, a "keycloak"
+      # hoszton történik (lásd https://github.com/lipcsei/sso) - ezért a
+      # két URL szándékosan eltér.
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/snitt}
-      KEYCLOAK_DISCOVERY_URL: http://keycloak:8081/realms/snitt
+      KEYCLOAK_DISCOVERY_URL: http://keycloak:8080/realms/snitt
       # Több kliens hívja ugyanezt az API-t, mindegyik a saját client id-jével
       # kap tokent - ezért az elfogadott audience-ek listája.
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-snitt-landing,snitt-admin}
       # A landing (5174) és az admin felület (5175) is innen hívja az API-t.
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5174,http://localhost:5175}
-      # A Keycloak Admin REST API a compose-hálózaton belülről érhető el; a
+      # A Keycloak Admin REST API az sso-net hálózaton belülről érhető el; a
       # service account innen olvassa a felhasználókat az admin felülethez.
-      KEYCLOAK_BASE_URL: http://keycloak:8081
+      KEYCLOAK_BASE_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-snitt}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-snitt-admin-api}
-      # Fejlesztői titok, a realm-export.json-ben ugyanez szerepel.
+      # Fejlesztői titok, a sso repó snitt-realm.json-jában ugyanez szerepel.
       # Éles környezetben felülírandó.
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-snitt-admin-api-dev-secret}
       ADMIN_ROLE: ${ADMIN_ROLE:-admin}
@@ -100,9 +74,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      keycloak:
-        condition: service_started
-
+    networks:
+      - default
+      - sso-net
 
   admin:
     build:
@@ -136,5 +110,15 @@ services:
     ports:
       - "8088:80"
     restart: unless-stopped
+
+networks:
+  default: {}
+  # Owned by https://github.com/lipcsei/sso - lets `account` reach the
+  # shared Keycloak container by name ("keycloak") for JWKS validation and
+  # the Admin REST API.
+  sso-net:
+    external: true
+    name: sso-net
+
 volumes:
   postgres-data:

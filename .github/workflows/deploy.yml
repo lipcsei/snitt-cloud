@@ -96,9 +96,18 @@ jobs:
             git reset --hard origin/main
 
             # A "landing" szándékosan hiányzik: az GitHub Pages-en fut.
+            #
+            # A "keycloak" és a TLS-terminátor ("caddy") is szándékosan
+            # hiányzik: a Keycloak a megosztott sso repóban fut
+            # (https://github.com/lipcsei/sso), a 80/443-at pedig egyetlen
+            # megosztott proxy kezeli minden appnak
+            # (https://github.com/lipcsei/edge). Ez a workflow egyiket sem
+            # telepíti - azoknak saját deploy workflow-juk van, és ELŐBB
+            # kell futniuk, mint ennek (sso -> edge -> ez), mert a konténereink az sso-net és az
+            # edge-net hálózatra csatlakoznak, amiket azok hoznak létre.
             docker compose --env-file deploy/.env.prod \
               -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
-              up -d --build postgres keycloak account admin caddy
+              up -d --build postgres account admin
 
             # A régi image-rétegek felszaporodnának minden deploy-jal.
             docker image prune -f

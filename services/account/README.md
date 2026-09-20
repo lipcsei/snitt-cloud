@@ -57,10 +57,10 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `HTTP_ADDR` | `:8090` | HTTP figyelési cím. |
 | `DATABASE_URL` | `postgres://snitt:snitt@localhost:5432/snitt?sslmode=disable` | PostgreSQL kapcsolat. |
 | `KEYCLOAK_ISSUER` | `http://localhost:8081/realms/snitt` | A realm issuer URL-je; ennek egyeznie kell a tokenek `iss` claimjével. |
-| `KEYCLOAK_DISCOVERY_URL` | = `KEYCLOAK_ISSUER` | Opcionális. Akkor kell, ha a discovery más címen érhető el, mint az issuer (Dockerben: `http://keycloak:8081/realms/snitt`). |
+| `KEYCLOAK_DISCOVERY_URL` | = `KEYCLOAK_ISSUER` | Opcionális. Akkor kell, ha a discovery más címen érhető el, mint az issuer (Dockerben: `http://keycloak:8080/realms/snitt`, az `sso-net` hálózaton). |
 | `KEYCLOAK_AUDIENCE` | `snitt-landing` | A tokenben elvárt `aud`. |
 | `CORS_ORIGINS` | `http://localhost:5174,http://localhost:5175` | Vesszővel elválasztott lista a böngészőből hívó originokról (landing, admin). |
-| `KEYCLOAK_BASE_URL` | `http://localhost:8081` | A Keycloak gyökere az Admin REST API-hoz. Dockerben: `http://keycloak:8081`. |
+| `KEYCLOAK_BASE_URL` | `http://localhost:8081` | A Keycloak gyökere az Admin REST API-hoz. Dockerben: `http://keycloak:8080` (az `sso-net` hálózaton). |
 | `KEYCLOAK_REALM` | `snitt` | A realm neve az Admin API útvonalakhoz. |
 | `KEYCLOAK_ADMIN_CLIENT_ID` | `snitt-admin-api` | Bizalmas, service accountos kliens a felhasználók olvasásához. |
 | `KEYCLOAK_ADMIN_CLIENT_SECRET` | `snitt-admin-api-dev-secret` | Fejlesztői titok; élesben kötelezően felülírandó. |
@@ -68,13 +68,14 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `DEFAULT_CURRENCY` | `HUF` | Alapértelmezett pénznem (ISO 4217). |
 
 A service accountnak a `realm-management` kliensen `view-users` (a lapozáshoz `query-users`, a
-fiók letiltásához/engedélyezéséhez pedig `manage-users`) szerep kell; a
-[`keycloak/realm-export.json`](../../keycloak/realm-export.json) ezt már tartalmazza.
+fiók letiltásához/engedélyezéséhez pedig `manage-users`) szerep kell; a Keycloak (megosztott
+szolgáltatás, lásd [`sso`](https://github.com/lipcsei/sso)) `snitt-realm.json`-ja ezt már
+tartalmazza.
 
 > A realm import **csak akkor fut le, ha a realm még nem létezik.** Egy már működő Keycloakon
 > tehát az export módosítása önmagában nem hat: a `manage-users` szerepet pótolni kell. Erre
-> való a [`deploy/scripts/grant-manage-users.sh`](../../deploy/scripts/grant-manage-users.sh),
-> vagy kézzel: Clients → `snitt-admin-api` → Service accounts roles → Assign role →
+> való az sso repó [`scripts/grant-manage-users.sh`](https://github.com/lipcsei/sso/blob/main/scripts/grant-manage-users.sh)
+> szkriptje, vagy kézzel: Clients → `snitt-admin-api` → Service accounts roles → Assign role →
 > `realm-management manage-users`. Enélkül a fiók letiltása `502`-t ad, a hibaüzenetben a
 > Keycloak `403`-mal.
 
