@@ -31,11 +31,12 @@
 
 services:
   postgres:
-    # A sima "ports:" listákat a compose EGYBEFŰZI a docker-compose.yml
-    # eredeti bejegyzésével, nem cseréli le - marad a nyilvános port is,
-    # ha itt nem "!override"-oljuk explicit módon.
-    ports: !override
-      - "127.0.0.1:5432:5432"
+    # Élesben NINCS hosztport. A sima "ports:" listákat a compose EGYBEFŰZI
+    # a docker-compose.yml bejegyzésével, ezért kell a "!reset". Az account
+    # a belső hálózaton éri el (postgres:5432), a mentés "docker compose
+    # exec"-kel megy. A 127.0.0.1:5432 ráadásul ütközne az sso Postgresével,
+    # ami ugyanezen a gépen fut.
+    ports: !reset []
 
   account:
     ports: !override
