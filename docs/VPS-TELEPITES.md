@@ -29,7 +29,7 @@ kettő hozza létre a hálózatokat, amiket a mi konténereink használnak.
 
 **A titkok (jelszavak, kliens secret) egyetlen forrása a GitHub repo
 secretjei, nem a szerver.** A `deploy/.env.prod` fájlt maga a deploy workflow
-írja fel a szerverre minden kitelepítéskor a `VPS_ENV_PROD` secretből – a
+írja fel a szerverre minden kitelepítéskor a `VPS_ENV` secretből – a
 szerveren SOSEM szerkeszted kézzel; ha egy jelszót cserélnél, a GitHub
 secretet frissíted és újrafuttatod a workflow-t.
 
@@ -225,17 +225,21 @@ Ez a fájl a te géped `/tmp`-jében marad, git alá SOHA nem kerül – a telje
 tartalmát a következő pontban egy GitHub secretbe másolod, utána törölheted:
 `rm /tmp/env.prod.draft`.
 
-## 7. GitHub secretek
+## 7. GitHub secretek és változók
 
-A repo Settings → Secrets and variables → Actions alatt hozd létre:
+A repo Settings → Environments → **`snitt-cloud-prod`** environment alatt hozd
+létre (a workflow ezt az environmentet nevezi meg; repository szintű secretet
+nem használ):
 
-| Secret | Érték |
-| --- | --- |
-| `VPS_HOST` | a szerver IP-je vagy hostneve |
-| `VPS_USER` | `deploy` |
-| `VPS_SSH_KEY` | a 2. pontban generált **privát** kulcs teljes tartalma |
-| `VPS_SSH_PORT` | csak akkor kell, ha nem a 22-es portot használod |
-| `VPS_ENV_PROD` | a 6. pontban kitöltött `/tmp/env.prod.draft` fájl **teljes** tartalma, változtatás nélkül bemásolva |
+| Hova | Név | Érték |
+|---|---|---|
+| változó vagy secret | `VPS_HOST` | a szerver IP-je vagy hostneve |
+| változó vagy secret | `VPS_USER` | `deploy` |
+| változó vagy secret | `VPS_SSH_PORT` | csak ha nem a 22-es |
+| **csak secret** | `VPS_SSH_KEY` | a 2. pontban generált **privát** kulcs teljes tartalma |
+| **csak secret** | `VPS_ENV` | a 6. pontban kitöltött `/tmp/env.prod.draft` fájl **teljes** tartalma, változtatás nélkül bemásolva |
+
+A `VPS_SSH_KEY` és a `VPS_ENV` kerüljön az *Environment secrets* alá: a változót (*Environment variables*) a GitHub sima szövegként tárolja, és a futási naplóban sem takarja ki. Ha a workflow ezt a kettőt változóként találja, hibával leáll.
 
 ## 8. Első kitelepítés
 
@@ -287,7 +291,7 @@ KEYCLOAK_ADMIN_PASSWORD="<amit az sso .env.prod-jába írtál>" \
 
 Majd a Keycloak admin konzolján (Clients → `snitt-admin-api` → Credentials)
 generálj egy új client secretet. Ezt **nem** a szerveren írod be: frissítsd a
-`VPS_ENV_PROD` GitHub secretet az új `KEYCLOAK_ADMIN_CLIENT_SECRET` értékkel,
+`VPS_ENV` GitHub secretet az új `KEYCLOAK_ADMIN_CLIENT_SECRET` értékkel,
 majd futtasd újra a "Deploy VPS" workflow-t (Actions → Run workflow) – ez
 felülírja a szerveren a `.env.prod`-ot és újraindítja az `account`
 szolgáltatást az új secrettel.
@@ -313,11 +317,11 @@ csak remény.
 
 ## Ismert korlátok
 
-- Ha a `VPS_ENV_PROD` secret és a szerveren futó `deploy/.env.prod` valaha
+- Ha a `VPS_ENV` secret és a szerveren futó `deploy/.env.prod` valaha
   szétcsúszna (pl. valaki mégis kézzel piszkálta a szerverit), a következő
   "Deploy VPS" futás visszaállítja a secretben tárolt állapotot – a secret a
   forrás igazság, nem a szerver.
-- A `VPS_ENV_PROD` tartalma sehol máshol nincs meg mentve (a GitHub secretek
+- A `VPS_ENV` tartalma sehol máshol nincs meg mentve (a GitHub secretek
   utólag nem olvashatók vissza a felületen) – érdemes egy jelszókezelőbe is
   bemásolni, mielőtt letörlöd a saját géped `/tmp/env.prod.draft` fájlját.
 - Ha a `deploy/docker-compose.prod.yml` service-neveit vagy a domainek
