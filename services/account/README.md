@@ -66,6 +66,13 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `KEYCLOAK_ADMIN_CLIENT_SECRET` | `snitt-admin-api-dev-secret` | Fejlesztői titok; élesben kötelezően felülírandó. |
 | `ADMIN_ROLE` | `admin` | Az a realm szerep, ami az `/api/v1/admin/*` végpontokat nyitja. |
 | `DEFAULT_CURRENCY` | `HUF` | Alapértelmezett pénznem (ISO 4217). |
+| `SENTRY_DSN` | *(üres)* | Opcionális hibajelentés a GlitchTipbe (a projekt *Client Keys (DSN)* oldaláról). **Üresen teljesen kikapcsolva**: az SDK el sem indul. Composeban a `SENTRY_DSN_ACCOUNT`-ból jön. |
+| `SENTRY_ENVIRONMENT` | `development` | A környezet neve az eseményeken (az éles compose `production`-t állít). |
+| `SENTRY_RELEASE` | *(üres)* | A kiadás azonosítója az eseményeken (opcionális). |
+
+Hibajelentéskor a handlerben keletkező pánik (stacktrace-szel) és minden visszaadott `5xx` válasz
+egy-egy eseményt ad; a `4xx`-et nem jelenti. Személyes adat, kérés törzse és lekérdezés-szöveg nem
+kerül bele. Részletek: [`docs/VPS-TELEPITES.md`](../../docs/VPS-TELEPITES.md) 11. pont.
 
 A service accountnak a `realm-management` kliensen `view-users` (a lapozáshoz `query-users`, a
 fiók letiltásához/engedélyezéséhez pedig `manage-users`) szerep kell; a Keycloak (megosztott
@@ -218,4 +225,5 @@ internal/config           env-alapú konfiguráció
 internal/auth             OIDC token-ellenőrzés + middleware (TokenVerifier interfész)
 internal/store            pgxpool, beágyazott schema.sql, lekérdezések
 internal/httpapi          routing, handlerek, CORS, admin napló, tesztek
+internal/errtrack         opcionális hibajelentés (Sentry SDK): pánik és 5xx
 ```

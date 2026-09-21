@@ -12,6 +12,7 @@ import (
 
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
+	"github.com/lipcsei/snitt-cloud/services/account/internal/errtrack"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 
@@ -99,7 +100,8 @@ func New(o Options) *API {
 	}
 }
 
-// Handler visszaadja a teljes, middleware-ekkel becsomagolt routert.
+// Handler visszaadja a teljes, middleware-ekkel becsomagolt routert. A legkülső réteg a
+// hibajelentés (errtrack): ő látja a többi réteg pánikját is; kikapcsolva átengedi a kérést.
 func (a *API) Handler() http.Handler {
 	mux := http.NewServeMux()
 
@@ -112,12 +114,13 @@ func (a *API) Handler() http.Handler {
 
 	a.adminRoutes(mux)
 
-	return a.cors(mux)
+	return errtrack.Middleware(a.cors(mux))
 }
 
 func (a *API) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	if err := a.store.Ping(r.Context()); err != nil {
 		a.log.WarnContext(r.Context(), "healthz: adatbázis nem elérhető", "error", err)
+		errtrack.Report(r, err, http.StatusServiceUnavailable)
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "degraded", "database": "down"})
 		return
 	}
@@ -135,7 +138,7 @@ func (a *API) handleGetMe(w http.ResponseWriter, r *http.Request) {
 	p, err := a.store.UpsertProfile(r.Context(), id.Subject, id.Email, id.PreferredUsername, id.Name)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profil upsert sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "profil nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "profil nem elérhető")
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
@@ -194,14 +197,14 @@ func (a *API) handlePatchMe(w http.ResponseWriter, r *http.Request) {
 	// hívott PATCH-et), ezért előbb létrehozzuk a token adataiból.
 	if _, err := a.store.UpsertProfile(r.Context(), id.Subject, id.Email, id.PreferredUsername, id.Name); err != nil {
 		a.log.ErrorContext(r.Context(), "profil upsert sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "profil nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "profil nem elérhető")
 		return
 	}
 
 	p, err := a.store.UpdateProfile(r.Context(), id.Subject, req.DisplayName, req.Locale)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profil frissítés sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "profil nem frissíthető")
+		serverError(w, r, err, http.StatusInternalServerError, "profil nem frissíthető")
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
@@ -222,7 +225,7 @@ func (a *API) handleEntitlements(w http.ResponseWriter, r *http.Request) {
 	items, err := a.store.ActiveEntitlements(r.Context(), id.Subject)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "jogosultságok lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "jogosultságok nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "jogosultságok nem elérhetők")
 		return
 	}
 	if items == nil {
@@ -297,6 +300,16 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 	}
 }
 
+// writeError a 4xx válaszokhoz való. 5xx-hez a serverError kell, hogy a hiba a hibajelentőbe is
+// eljusson.
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+// serverError 5xx hibaválaszt ír, és a kiváltó hibát jelenti a hibajelentőnek (errtrack): a
+// hívás előtti naplózás a szerver logjába megy, ez az error trackerbe. Válaszonként legfeljebb
+// egyszer hívandó, különben egy hibából több esemény lesz.
+func serverError(w http.ResponseWriter, r *http.Request, err error, status int, msg string) {
+	errtrack.Report(r, err, status)
+	writeError(w, status, msg)
 }

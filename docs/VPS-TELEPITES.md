@@ -315,6 +315,35 @@ Próbáld ki mindkettőt egyszer kézzel is – lásd
 `scripts/backup.sh` fejlécét: egy soha ki nem próbált mentés nem mentés,
 csak remény.
 
+## 11. Hibajelentés a GlitchTipbe (opcionális)
+
+A szolgáltatások a saját hibakövetőnkre ([`lipcsei/glitchtip`](https://github.com/lipcsei/glitchtip))
+küldhetik a hibáikat, a szabványos Sentry SDK-kkal. **Minden opcionális: üres DSN = teljesen
+kikapcsolva** – az SDK el sem indul, nincs hálózati forgalom, és semmi nem változik.
+
+| `.env` változó | Melyik projekt | Mit jelent |
+|---|---|---|
+| `SENTRY_DSN_ACCOUNT` | `snitt-account` | Az account szolgáltatás pánikjait és a visszaadott 5xx hibáit (4xx-et soha). Futásidőben olvassa (a konténerben `SENTRY_DSN`), újraindítás elég. |
+| `SENTRY_DSN_ADMIN` | `snitt-admin` | Az admin felület böngészős és render hibáit. **Build-időben** épül a képbe: a változtatásához újra kell építeni. |
+| `SENTRY_DSN_LANDING` | `snitt-landing` | A landing böngészős és render hibáit. Ugyanúgy build-idejű; élesben a landing GitHub Pages-en épül, ott a `SENTRY_DSN_LANDING` *repository variable* adja (lásd [`ci.yml`](../.github/workflows/ci.yml)). |
+
+A DSN a GlitchTip projekt *Client Keys (DSN)* oldalán van (a projekteket a `glitchtip` repó
+`make projects` parancsa hozza létre). A környezet neve az eseményeken fejlesztői stackben
+`development`, az éles composeban `production`.
+
+- **Helyben:** `cp deploy/.env.example deploy/.env`, és töltsd ki a DSN-eket (a Dockerben futó
+  account-nak `host.docker.internal` kell a `localhost` helyett).
+- **Élesben:** a `deploy/.env.prod.example`-ben a három kulcs **kikommentelve** áll, mert az éles
+  GlitchTip még nincs felállítva, és a `vps/github-env.sh check` minden kommentjel nélküli kulcsot
+  kitöltöttnek vár. Ha megvan a DSN: vedd le a kommentjelet, írd be, frissítsd a `VPS_ENV` secretet,
+  és futtasd újra a *Deploy VPS* workflow-t (az `up -d --build` újraépíti az admin képet is).
+- **Adatvédelem:** nincs személyes adat (IP, süti, `Authorization` fejléc), a kérés törzse nem megy
+  ki, a lekérdezés-szöveget (pl. az admin keresője: `?q=`) és az URL-fragmentet levágjuk; nincs
+  tracing és session replay.
+- **CSP:** a repóban (nginx, Go, `index.html`) nincs Content-Security-Policy, ezért a böngésző
+  szabadon küldhet a GlitchTipnek. Ha később bevezetsz egyet, a GlitchTip hostját fel kell venni a
+  `connect-src`-be.
+
 ## Ismert korlátok
 
 - Ha a `VPS_ENV` secret és a szerveren futó `deploy/.env.prod` valaha

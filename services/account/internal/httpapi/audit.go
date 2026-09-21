@@ -125,7 +125,7 @@ func (a *API) handleListAudit(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "napló lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a napló nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "a napló nem elérhető")
 		return
 	}
 

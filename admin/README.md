@@ -56,6 +56,11 @@ npm run build
 | `VITE_KEYCLOAK_REALM` | `snitt` | A realm neve. |
 | `VITE_KEYCLOAK_CLIENT_ID` | `snitt-admin` | Az admin felület publikus kliense (PKCE). |
 | `VITE_API_BASE_URL` | `http://localhost:8090` | Az account szolgáltatás gyökér URL-je. |
+| `VITE_SENTRY_DSN` | *(üres)* | Opcionális hibajelentés a GlitchTipbe. **Üresen teljesen kikapcsolva**: az SDK a csomagba sem kerül be. A compose a `SENTRY_DSN_ADMIN`-ból adja. |
+| `VITE_SENTRY_ENVIRONMENT` | a Vite módja | A környezet neve az eseményeken. |
+
+A `VITE_*` értékeket a Vite fordításkor égeti be, ezért a `VITE_SENTRY_DSN` változtatásához is újra
+kell építeni a képet. A hibajelentés részletei: [`docs/VPS-TELEPITES.md`](../docs/VPS-TELEPITES.md) 11. pont.
 
 ## Jogosultság
 

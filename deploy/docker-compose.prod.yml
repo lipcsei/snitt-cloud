@@ -28,6 +28,8 @@
 #    edge proxy nyit 80/443-at, TLS-sel - a nyers HTTP végpontok névvel ne
 #    legyenek elérhetők a nyílt internetről.
 #  - az account és az admin konténert az edge-net hálózatra köti.
+#  - a hibajelentés environmentjét production-re állítja (a DSN-ek a
+#    .env.prod-ból jönnek: SENTRY_DSN_ACCOUNT / SENTRY_DSN_ADMIN, opcionálisak).
 
 services:
   postgres:
@@ -39,6 +41,8 @@ services:
     ports: !reset []
 
   account:
+    environment:
+      SENTRY_ENVIRONMENT: production
     ports: !override
       - "127.0.0.1:8090:8090"
     networks:
@@ -48,6 +52,9 @@ services:
         aliases: [snitt-account]
 
   admin:
+    build:
+      args:
+        VITE_SENTRY_ENVIRONMENT: production
     ports: !override
       - "127.0.0.1:5175:80"
     networks:

@@ -3,17 +3,22 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './AuthProvider';
 import App from './App';
+import { SentryBoundary, initSentry } from './sentry';
 import './styles.css';
+
+initSentry();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Hiányzik a #root elem');
 
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    <SentryBoundary>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </BrowserRouter>
+    </SentryBoundary>
   </StrictMode>,
 );

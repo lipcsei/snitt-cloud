@@ -137,7 +137,7 @@ func (a *API) handleOverview(w http.ResponseWriter, r *http.Request) {
 	ov, err := a.store.Overview(r.Context())
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "áttekintés lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "az összesítők nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "az összesítők nem elérhetők")
 		return
 	}
 
@@ -176,13 +176,13 @@ func (a *API) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	kcUsers, err := a.directory.ListUsers(r.Context(), search, (page-1)*size, size)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "keycloak felhasználólista sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a Keycloak felhasználólistája nem elérhető: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a Keycloak felhasználólistája nem elérhető: "+err.Error())
 		return
 	}
 	total, err := a.directory.CountUsers(r.Context(), search)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "keycloak felhasználószám sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
 		return
 	}
 
@@ -193,13 +193,13 @@ func (a *API) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	profiles, err := a.store.ProfilesBySubjects(r.Context(), subjects)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profilok lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profilok nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a profilok nem elérhetők")
 		return
 	}
 	subs, err := a.store.LiveSubscriptionsBySubjects(r.Context(), subjects)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "előfizetések lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "az előfizetések nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "az előfizetések nem elérhetők")
 		return
 	}
 
@@ -236,7 +236,7 @@ func (a *API) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "keycloak felhasználó lekérdezés sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
 		return
 	}
 
@@ -250,26 +250,26 @@ func (a *API) handleGetUser(w http.ResponseWriter, r *http.Request) {
 		// ez normál állapot, nem hiba.
 	default:
 		a.log.ErrorContext(r.Context(), "profil lekérdezés sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profil nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "a profil nem elérhető")
 		return
 	}
 
 	ents, err := a.store.AllEntitlements(r.Context(), subject)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "jogosultságok lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a jogosultságok nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a jogosultságok nem elérhetők")
 		return
 	}
 	subs, _, err := a.store.ListSubscriptions(r.Context(), store.SubscriptionFilter{Subject: subject, Limit: maxPageSize})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "előfizetések lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "az előfizetések nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "az előfizetések nem elérhetők")
 		return
 	}
 	invoices, totals, err := a.store.ListInvoices(r.Context(), store.InvoiceFilter{Subject: subject, Limit: maxPageSize})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "számlák lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a számlák nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a számlák nem elérhetők")
 		return
 	}
 
@@ -332,14 +332,14 @@ func (a *API) handleListSubscriptions(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "előfizetések lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "az előfizetések nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "az előfizetések nem elérhetők")
 		return
 	}
 
 	views, err := a.decorateSubscriptions(r.Context(), subs)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profilok lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profilok nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a profilok nem elérhetők")
 		return
 	}
 	writeJSON(w, http.StatusOK, subscriptionsResponse{
@@ -380,7 +380,7 @@ func (a *API) handleGetSubscription(w http.ResponseWriter, r *http.Request) {
 	views, err := a.decorateSubscriptions(r.Context(), []store.Subscription{sub})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profil lekérdezés sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profil nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "a profil nem elérhető")
 		return
 	}
 	writeJSON(w, http.StatusOK, views[0])
@@ -432,7 +432,7 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 	// Manual implementáció üres azonosítót ad, terhelés nem történik.
 	if _, err := a.billing.EnsureCustomer(r.Context(), req.Subject, ""); err != nil {
 		a.log.ErrorContext(r.Context(), "fizetési szolgáltató ügyfél sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a fizetési szolgáltató nem elérhető")
+		serverError(w, r, err, http.StatusBadGateway, "a fizetési szolgáltató nem elérhető")
 		return
 	}
 
@@ -606,7 +606,7 @@ func (a *API) handleCancelSubscription(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.billing.CancelSubscription(r.Context(), current.ExternalSubscriptionID, req.AtPeriodEnd); err != nil {
 		a.log.ErrorContext(r.Context(), "szolgáltatói lemondás sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a fizetési szolgáltatónál nem sikerült a lemondás: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a fizetési szolgáltatónál nem sikerült a lemondás: "+err.Error())
 		return
 	}
 
@@ -725,7 +725,7 @@ func (a *API) handleListInvoices(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "számlák lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a számlák nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a számlák nem elérhetők")
 		return
 	}
 
@@ -736,7 +736,7 @@ func (a *API) handleListInvoices(w http.ResponseWriter, r *http.Request) {
 	profiles, err := a.store.ProfilesBySubjects(r.Context(), subjects)
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profilok lekérdezése sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profilok nem elérhetők")
+		serverError(w, r, err, http.StatusInternalServerError, "a profilok nem elérhetők")
 		return
 	}
 
@@ -758,7 +758,7 @@ func (a *API) handleGetInvoice(w http.ResponseWriter, r *http.Request) {
 	profiles, err := a.store.ProfilesBySubjects(r.Context(), []string{inv.Subject})
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "profil lekérdezés sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, "a profil nem elérhető")
+		serverError(w, r, err, http.StatusInternalServerError, "a profil nem elérhető")
 		return
 	}
 	writeJSON(w, http.StatusOK, invoiceView{Invoice: inv, User: refFor(inv.Subject, profiles)})
@@ -914,7 +914,7 @@ func (a *API) writeStoreError(w http.ResponseWriter, r *http.Request, err error,
 		writeError(w, http.StatusConflict, err.Error())
 	default:
 		a.log.ErrorContext(r.Context(), "adatbázis művelet sikertelen", "error", err)
-		writeError(w, http.StatusInternalServerError, fallback)
+		serverError(w, r, err, http.StatusInternalServerError, fallback)
 	}
 }
 

@@ -142,7 +142,7 @@ func (a *API) handlePatchUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		a.log.ErrorContext(r.Context(), "keycloak felhasználó lekérdezés sikertelen", "error", err)
-		writeError(w, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a Keycloak nem elérhető: "+err.Error())
 		return
 	}
 	if ku.Enabled == *req.Enabled {
@@ -153,7 +153,7 @@ func (a *API) handlePatchUser(w http.ResponseWriter, r *http.Request) {
 
 	if err := a.directory.SetUserEnabled(r.Context(), subject, *req.Enabled); err != nil {
 		a.log.ErrorContext(r.Context(), "keycloak fiókállapot írása sikertelen", "error", err, "subject", subject)
-		writeError(w, http.StatusBadGateway, "a Keycloak nem fogadta el a módosítást: "+err.Error())
+		serverError(w, r, err, http.StatusBadGateway, "a Keycloak nem fogadta el a módosítást: "+err.Error())
 		return
 	}
 

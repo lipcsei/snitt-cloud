@@ -25,6 +25,12 @@ type Config struct {
 	AdminClientSecret string
 	AdminRole         string
 	DefaultCurrency   string
+
+	// Opcionális hibajelentés egy Sentry-kompatibilis szerverre (a saját
+	// GlitchTipünkre). Üres SentryDSN = teljesen kikapcsolva.
+	SentryDSN         string
+	SentryEnvironment string
+	SentryRelease     string
 }
 
 // Load beolvassa a konfigurációt a környezetből és validálja.
@@ -45,6 +51,10 @@ func Load() (Config, error) {
 		AdminClientSecret: env("KEYCLOAK_ADMIN_CLIENT_SECRET", "snitt-admin-api-dev-secret"),
 		AdminRole:         env("ADMIN_ROLE", "admin"),
 		DefaultCurrency:   strings.ToUpper(env("DEFAULT_CURRENCY", "HUF")),
+
+		SentryDSN:         env("SENTRY_DSN", ""),
+		SentryEnvironment: env("SENTRY_ENVIRONMENT", "development"),
+		SentryRelease:     env("SENTRY_RELEASE", ""),
 	}
 	// Containeren belül a Keycloak más hosztnéven érhető el ("keycloak"), mint
 	// ahogy a tokenek issuer claimje szól ("localhost"). Alapból a kettő azonos.

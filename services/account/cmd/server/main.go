@@ -14,6 +14,7 @@ import (
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/config"
+	"github.com/lipcsei/snitt-cloud/services/account/internal/errtrack"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/httpapi"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
@@ -34,6 +35,15 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	// Opcionális hibajelentés (GlitchTip): üres SENTRY_DSN esetén nem csinál semmit.
+	// A defer leálláskor, a futó kérések bevárása UTÁN üríti ki a függő eseményeket.
+	flushErrors := errtrack.Setup(errtrack.Config{
+		DSN:         cfg.SentryDSN,
+		Environment: cfg.SentryEnvironment,
+		Release:     cfg.SentryRelease,
+	}, log)
+	defer flushErrors()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

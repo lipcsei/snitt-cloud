@@ -69,6 +69,11 @@ services:
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-snitt-admin-api-dev-secret}
       ADMIN_ROLE: ${ADMIN_ROLE:-admin}
       DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-HUF}
+      # Opcionális hibajelentés a GlitchTipbe; üres DSN = teljesen kikapcsolva.
+      # Dockerben futó szolgáltatásnak a DSN-ben "localhost" helyett
+      # "host.docker.internal" kell (lásd deploy/.env.example).
+      SENTRY_DSN: ${SENTRY_DSN_ACCOUNT:-}
+      SENTRY_ENVIRONMENT: development
     ports:
       - "8090:8090"
     depends_on:
@@ -90,6 +95,11 @@ services:
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-snitt}
         VITE_KEYCLOAK_CLIENT_ID: ${ADMIN_CLIENT_ID:-snitt-admin}
         VITE_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8090}
+        # Hibajelentés a GlitchTipbe (opcionális, üres DSN = kikapcsolva). Az
+        # environmentet külön kell adni: a kép production módban épül, ami
+        # magától "production"-t adna erre a fejlesztői példányra is.
+        VITE_SENTRY_DSN: ${SENTRY_DSN_ADMIN:-}
+        VITE_SENTRY_ENVIRONMENT: development
     ports:
       - "5175:80"
     depends_on:
@@ -107,6 +117,8 @@ services:
         # A kanonikus URL-ek és a hreflang ebből épülnek - élesben
         # https://snitt.video.
         SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:8088}
+        VITE_SENTRY_DSN: ${SENTRY_DSN_LANDING:-}
+        VITE_SENTRY_ENVIRONMENT: development
     ports:
       - "8088:80"
     restart: unless-stopped
