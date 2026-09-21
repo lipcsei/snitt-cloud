@@ -276,6 +276,22 @@ export const de: Strings = {
         title: 'Alles bleibt lokal',
         body: 'Kein Server, kein Upload, kein Kontozwang. Der Index ist eine einzige SQLite-Datei auf deinem Rechner, und deine Videos bleiben genau dort, wo sie schon immer lagen.',
       },
+      {
+        title: 'Rechtschreibprüfung im Transkript',
+        body: 'Whisper verschreibt sich manchmal. Snitt markiert die verdächtigen Zeilen, schlägt eine Korrektur vor (kutyaval → kutyával) und du übernimmst sie mit einem Klick – Namen und Fachwörter kommen auf deine eigene Wortliste. Es läuft lokal und schreibt nie von selbst etwas um.',
+      },
+      {
+        title: 'Speicherplatz freigeben',
+        body: 'Ein per Link geladenes Video ist groß, sein Transkript nur wenige hundert Kilobyte. Snitt kann die Datei löschen, sobald das Transkript fertig ist: Das Transkript bleibt durchsuchbar, und wenn du aus einem Treffer schneiden willst, lädt Snitt das Video erneut.',
+      },
+      {
+        title: 'Deutliche Warnung, wenn ein Film fehlt',
+        body: 'Importierte Filme kopiert Snitt nicht, deshalb können sie verschwinden: verschoben oder das Laufwerk abgezogen. Snitt prüft sie beim Start und auf Knopfdruck und sagt dir, welcher Film wo fehlt.',
+      },
+      {
+        title: 'Downloads, die durchhalten',
+        body: 'Beim Download siehst du einen Fortschrittsbalken, und wenn er abbricht, versucht Snitt es von selbst erneut (bis zu zehnmal, mit immer längeren Pausen) – du musst nicht danebensitzen.',
+      },
     ],
   },
 

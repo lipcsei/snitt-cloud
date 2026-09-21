@@ -53,6 +53,31 @@ const icons: Record<string, ReactNode> = {
       <path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" {...S} />
     </>
   ),
+  spell: (
+    <>
+      <path d="M4 17.5 8 6.5l4 11M5.4 13.5h5.2" {...S} />
+      <path d="m14.5 15 2.5 2.5 4.5-6" {...S} />
+    </>
+  ),
+  storage: (
+    <>
+      <ellipse cx="12" cy="6" rx="7.5" ry="3" {...S} />
+      <path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" {...S} />
+      <path d="M12 16.5v4m-2-2 2 2 2-2" {...S} />
+    </>
+  ),
+  missing: (
+    <>
+      <path d="M12 4 3 19.5h18L12 4Z" {...S} />
+      <path d="M12 10v4.5M12 17.2v.1" {...S} />
+    </>
+  ),
+  retry: (
+    <>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" {...S} />
+      <path d="M20 4.5V9h-4.5" {...S} />
+    </>
+  ),
   lock: (
     <>
       <rect x="4" y="10" width="16" height="10" rx="3" {...S} />
@@ -62,7 +87,7 @@ const icons: Record<string, ReactNode> = {
 };
 
 /** A kártyák sorrendje kötött: az ikonok a nyelvi tábla elemeihez tartoznak. */
-const ICON_ORDER = ['quote', 'subs', 'mic', 'brain', 'cut', 'library', 'move', 'lock'];
+const ICON_ORDER = ['quote', 'subs', 'mic', 'brain', 'cut', 'library', 'move', 'lock', 'spell', 'storage', 'missing', 'retry'];
 
 export default function Features() {
   const t = useT();

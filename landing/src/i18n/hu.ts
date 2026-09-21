@@ -276,6 +276,22 @@ export const hu: Strings = {
         title: 'Minden helyben marad',
         body: 'Nincs szerver, nincs feltöltés, nincs fiókkényszer. Az index egyetlen SQLite fájl a gépeden, a videóid pedig ott maradnak, ahol eddig is voltak.',
       },
+      {
+        title: 'Helyesírás-ellenőrzés a leiratban',
+        body: 'A Whisper néha elír egy szót. A Snitt megjelöli a gyanús sorokat, javaslatot ad rájuk (kutyaval → kutyával), és egy kattintással javíthatsz – a nevet vagy szakszót pedig felveheted a saját szólistádra. Helyben fut, és magától soha nem ír át semmit.',
+      },
+      {
+        title: 'Tárhely-felszabadítás',
+        body: 'A linkről letöltött videó nagy, a leirata pár száz kilobájt. Kérheted, hogy a leirat után a Snitt törölje a fájlt: a leirat kereshető marad, és ha egy találatból vágnál, újra letölti a videót.',
+      },
+      {
+        title: 'Feltűnő jelzés, ha eltűnik egy film',
+        body: 'Az importált filmeket a Snitt nem másolja be, ezért eltűnhetnek: átmozgatták, leválasztottad a meghajtót. Induláskor és egy gombra is ellenőrzi őket, és megmondja, melyik hol hiányzik.',
+      },
+      {
+        title: 'Kitartó letöltés',
+        body: 'A letöltésnél folyamatjelzőt látsz, és ha megszakad, a Snitt magától újrapróbálkozza (legfeljebb tízszer, egyre hosszabb szünetekkel) – nem kell rajta őrködnöd.',
+      },
     ],
   },
 

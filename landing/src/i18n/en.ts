@@ -272,6 +272,22 @@ export const en: Strings = {
         title: 'Everything stays local',
         body: 'No server, no upload, no forced account. The index is a single SQLite file on your machine, and your videos stay exactly where they have always been.',
       },
+      {
+        title: 'Spell-check in the transcript',
+        body: 'Whisper sometimes misspells a word. Snitt marks the suspicious lines, suggests a fix (kutyaval → kutyával) and lets you apply it with one click — names and jargon can go on your own word list. It runs locally and never rewrites anything on its own.',
+      },
+      {
+        title: 'Free up disk space',
+        body: 'A video downloaded from a link is big; its transcript is a few hundred kilobytes. Ask Snitt to delete the file once the transcript is done: the transcript stays searchable, and if you want to cut from a hit, it downloads the video again.',
+      },
+      {
+        title: 'A clear warning when a film goes missing',
+        body: 'Snitt does not copy imported films, so they can disappear: moved, or the drive unplugged. It checks them at startup and on a button, and tells you which one is missing and where.',
+      },
+      {
+        title: 'Downloads that keep going',
+        body: 'You get a progress bar while downloading, and if it breaks off, Snitt retries by itself (up to ten times, with longer and longer pauses) — no need to babysit it.',
+      },
     ],
   },
 

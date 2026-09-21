@@ -16,7 +16,7 @@ type Two<T> = readonly [T, T];
 type Three<T> = readonly [T, T, T];
 type Four<T> = readonly [T, T, T, T];
 type Six<T> = readonly [T, T, T, T, T, T];
-type Eight<T> = readonly [T, T, T, T, T, T, T, T];
+type Twelve<T> = readonly [T, T, T, T, T, T, T, T, T, T, T, T];
 
 export type MetaText = { title: string; description: string };
 
@@ -179,7 +179,7 @@ export type Strings = {
     eyebrow: string;
     title: string;
     sub: string;
-    items: Eight<Feature>;
+    items: Twelve<Feature>;
   };
 
   pricing: {
