@@ -6,12 +6,15 @@
 # tehát egy jelszó cseréjéhez elég a GitHub secretet frissíteni és a
 # workflow-t (újra)futtatni - nem kell SSH-n szerkeszteni semmit.
 #
-# Szükséges repository secretek (Settings → Secrets and variables →
-# Actions), lásd docs/VPS-TELEPITES.md:
+# A "snitt-cloud-prod" environment beállításai (Settings → Environments),
+# lásd docs/VPS-TELEPITES.md. Változó (Environment variables) VAGY secret
+# lehet, mert nem titok:
 #   VPS_HOST        a szerver IP-je vagy hostneve
 #   VPS_USER        a deploy felhasználó (NE root)
-#   VPS_SSH_KEY     a deploy felhasználóhoz tartozó PRIVÁT kulcs (ed25519)
 #   VPS_SSH_PORT    opcionális, alapértelmezés 22
+# Csak SECRET lehet (a változó sima szövegként tárolódik és naplózódik; a
+# workflow hibával leáll, ha változóként találja):
+#   VPS_SSH_KEY     a deploy felhasználóhoz tartozó PRIVÁT kulcs (ed25519)
 #   VPS_ENV_PROD    a deploy/.env.prod fájl teljes, kitöltött tartalma
 
 name: Deploy VPS
@@ -25,6 +28,12 @@ on:
   # a VPS_ENV_PROD secret frissítése után kell újraküldeni build nélkül.
   workflow_dispatch:
 
+# Két deploy soha ne fusson egyszerre (ugyanazokért a konténerekért
+# versenyeznének).
+concurrency:
+  group: deploy-snitt-cloud
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Kitelepítés SSH-n
@@ -35,24 +44,35 @@ jobs:
     # A secretek (VPS_HOST/VPS_USER/VPS_SSH_KEY/VPS_ENV_PROD) a
     # "snitt-cloud-prod" Environmenthez vannak felvéve a repo
     # Settings-jében - environment secretek NEM látszanak egy jobnak, ha az
-    # nem hivatkozik rájuk ezzel a mezővel (ezért jött ki mind a négy 0
-    # hosszúnak a debug lépésben).
+    # nem hivatkozik rájuk ezzel a mezővel. Ha az environment nem létezik
+    # (pl. törölték vagy átnevezték), a GitHub a futáskor ÜRESEN létrehozza -
+    # ilyenkor minden secret hiányzik.
     environment: snitt-cloud-prod
     steps:
-      # IDEIGLENES debug lépés - csak a secretek HOSSZÁT írja ki, a
-      # tartalmukat nem, hogy kiderüljön melyik érkezik üresen. Töröld ezt a
-      # lépést, ha minden secret rendben megjelenik (hossz > 0).
-      - name: "DEBUG: secretek hossza"
+      # Ha egy secret hiányzik vagy üres, itt álljon meg, és NÉV SZERINT mondja
+      # meg, melyik az (az értéküket soha nem írja ki). Enélkül az scp csak
+      # annyit mond, hogy "missing server host".
+      - name: Beállítások ellenőrzése
         env:
-          H: ${{ secrets.VPS_HOST }}
-          U: ${{ secrets.VPS_USER }}
-          K: ${{ secrets.VPS_SSH_KEY }}
-          E: ${{ secrets.VPS_ENV_PROD }}
+          VPS_HOST: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER || secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_ENV_PROD: ${{ secrets.VPS_ENV_PROD }}
+          # Csak azt, hogy LÉTEZIK-e ilyen változó, a tartalmát nem: a változót a napló nem takarja ki.
+          PLAIN_VARS: ${{ format('{0}{1}', vars.VPS_SSH_KEY && ' VPS_SSH_KEY' || '', vars.VPS_ENV_PROD && ' VPS_ENV_PROD' || '') }}
         run: |
-          echo "VPS_HOST hossza: ${#H}"
-          echo "VPS_USER hossza: ${#U}"
-          echo "VPS_SSH_KEY hossza: ${#K}"
-          echo "VPS_ENV_PROD hossza: ${#E}"
+          if [ -n "$PLAIN_VARS" ]; then
+            echo "::error::Ezeknek SECRETNEK kell lenniük, nem változónak (a változó sima szövegként tárolódik és naplózódik):$PLAIN_VARS. Vedd fel őket a snitt-cloud-prod environment Environment secrets részébe, és töröld a változót."
+            exit 1
+          fi
+          missing=""
+          for name in VPS_HOST VPS_USER VPS_SSH_KEY VPS_ENV_PROD; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Hiányzik a 'snitt-cloud-prod' environmentből:$missing. A VPS_HOST és a VPS_USER lehet Environment variable vagy secret, a VPS_SSH_KEY és a VPS_ENV_PROD csak Environment secret. Lásd docs/VPS-TELEPITES.md, 7. pont."
+            exit 1
+          fi
 
       # Fájlba írjuk a runneren, hogy utána scp-vel egyben át tudjuk vinni -
       # "printf '%s'" (nem echo), hogy a fájl tartalma karakterre pontosan a
@@ -65,20 +85,20 @@ jobs:
       - name: .env.prod feltöltése a szerverre
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
+          host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER || secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          port: ${{ vars.VPS_SSH_PORT || secrets.VPS_SSH_PORT || '22' }}
           source: ".env.prod.upload"
           target: "/opt/snitt-cloud/deploy/"
 
       - name: Kitelepítés
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
+          host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER || secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          port: ${{ vars.VPS_SSH_PORT || secrets.VPS_SSH_PORT || '22' }}
           script_stop: true
           script: |
             set -euo pipefail
