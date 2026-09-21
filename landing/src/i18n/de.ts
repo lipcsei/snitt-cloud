@@ -334,7 +334,7 @@ export const de: Strings = {
   downloads: {
     eyebrow: 'Download',
     title: 'Herunterladen, dann den Ordner mit deinen Videos zeigen',
-    sub: 'Die Releases liegen auf GitHub. Wähl das Paket für dein System.',
+    sub: 'Die Installer werden vom eigenen Snitt-Server geladen. Wähle das Paket für dein System.',
     platforms: [
       { name: 'Windows', detail: 'Windows 10 oder neuer · 64 Bit', file: '.exe-Installer' },
       {
@@ -345,6 +345,10 @@ export const de: Strings = {
       { name: 'Linux', detail: 'x86_64 · GTK/WebKit2GTK', file: '.AppImage / .deb' },
     ],
     cta: 'Herunterladen — {os}',
+    versionLine: 'Version {version} · {size}',
+    otherFormats: 'Weitere Formate:',
+    checksums: 'SHA-256-Prüfsummen',
+    checking: 'Suche nach einer Version…',
     notice: {
       title: 'Was brauchst du auf deinem Rechner?',
       body: 'Snitt stützt sich auf drei externe Werkzeuge und bringt sie bewusst **nicht** mit:',

@@ -1000,6 +1000,31 @@ a {
   margin-top: auto;
 }
 
+.platform-meta {
+  margin: 12px 0 0;
+  color: var(--faint);
+  font-size: 0.82rem;
+}
+
+.platform-meta + .platform-meta {
+  margin-top: 4px;
+}
+
+.platform-meta a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.platform-meta a:hover {
+  color: var(--text);
+}
+
+.platform .btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .notice {
   margin-top: 22px;
   padding: 26px;

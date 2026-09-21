@@ -27,6 +27,14 @@ npm run preview    # a legyártott build kiszolgálása
 
 Node 20 szükséges.
 
+## Letöltés-gombok
+
+A telepítők a Snitt saját szerveréről töltődnek le (`https://api.snitt.video/downloads`, az edge
+proxy szolgálja ki). A gombok a `latest.json`-ból (`src/release.ts`) tudják a verziót, a méretet és a
+fájlnevet; amíg nincs kiadás vagy a szerver nem érhető el, a „hamarosan” üzenetet mutatják.
+Felülírható: `VITE_DOWNLOAD_BASE_URL` (a CI-ban a `DOWNLOAD_BASE_URL` repository variable). A
+kiadás menete: a `snitt` repo `docs/KIADAS.md`-je.
+
 ## Környezeti változók
 
 Másold le a `.env.example` fájlt `.env` néven, ha az alapértelmezéseken változtatni kell.

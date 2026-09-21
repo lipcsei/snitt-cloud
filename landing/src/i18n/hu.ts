@@ -334,7 +334,7 @@ export const hu: Strings = {
   downloads: {
     eyebrow: 'Letöltés',
     title: 'Töltsd le, és mutasd meg neki a videóid mappáját',
-    sub: 'A kiadások a GitHubon érhetők el. Válaszd ki a rendszeredhez tartozó csomagot.',
+    sub: 'A telepítők a Snitt saját szerveréről töltődnek le. Válaszd ki a rendszeredhez tartozó csomagot.',
     platforms: [
       { name: 'Windows', detail: 'Windows 10 vagy újabb · 64 bites', file: '.exe telepítő' },
       {
@@ -345,6 +345,10 @@ export const hu: Strings = {
       { name: 'Linux', detail: 'x86_64 · GTK/WebKit2GTK környezet', file: '.AppImage / .deb' },
     ],
     cta: 'Letöltés — {os}',
+    versionLine: 'Verzió {version} · {size}',
+    otherFormats: 'Más formátum:',
+    checksums: 'SHA-256 ellenőrzőösszegek',
+    checking: 'Kiadás keresése…',
     notice: {
       title: 'Mire van szükség a gépeden?',
       body: 'A Snitt három külső eszközre támaszkodik, és ezeket **nem** csomagolja magába:',

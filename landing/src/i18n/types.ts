@@ -197,6 +197,13 @@ export type Strings = {
     platforms: Three<Platform>;
     /** {os} helyére kerül a rendszer neve. */
     cta: string;
+    /** {version} és {size} kerül a helyükre a letöltés-gomb alatt. */
+    versionLine: string;
+    /** A Linuxnál a fő (AppImage) mellett kínált többi formátum előtti felirat. */
+    otherFormats: string;
+    checksums: string;
+    /** A gomb felirata, amíg a szerverről még nem jött meg a kiadás leírása. */
+    checking: string;
     notice: {
       title: string;
       body: string;

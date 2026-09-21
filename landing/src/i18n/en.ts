@@ -330,13 +330,17 @@ export const en: Strings = {
   downloads: {
     eyebrow: 'Download',
     title: 'Download it, then show it the folder with your videos',
-    sub: 'The releases are on GitHub. Pick the package for your system.',
+    sub: 'The installers are downloaded from Snitt’s own server. Pick the package for your system.',
     platforms: [
       { name: 'Windows', detail: 'Windows 10 or newer · 64-bit', file: '.exe installer' },
       { name: 'macOS', detail: 'macOS 12 or newer · Apple Silicon and Intel', file: '.dmg image' },
       { name: 'Linux', detail: 'x86_64 · GTK/WebKit2GTK', file: '.AppImage / .deb' },
     ],
     cta: 'Download — {os}',
+    versionLine: 'Version {version} · {size}',
+    otherFormats: 'Other formats:',
+    checksums: 'SHA-256 checksums',
+    checking: 'Checking for a release…',
     notice: {
       title: 'What do you need on your machine?',
       body: 'Snitt relies on three external tools, and it deliberately does **not** bundle them:',

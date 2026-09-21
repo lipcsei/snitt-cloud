@@ -2,9 +2,19 @@ import { Link } from 'react-router-dom';
 import { useNotYet } from '../NotYetProvider';
 import { fill, useI18n } from '../i18n';
 import Rich from '../i18n/Rich';
+import { CHECKSUMS_URL, fileUrl, fmtSize, useLatestRelease, type ReleaseKey } from '../release';
 
 /** A platformok sorrendje kötött: az ikonok a nyelvi tábla elemeihez tartoznak. */
 const PLATFORM_IDS = ['windows', 'macos', 'linux'];
+
+/** Platformonként a fő letöltés, és (Linuxnál) a további formátumok. */
+const MAIN_FILE: Record<string, ReleaseKey> = { windows: 'windows', macos: 'macos', linux: 'linux-appimage' };
+const OTHER_FILES: Record<string, { key: ReleaseKey; label: string }[]> = {
+  linux: [
+    { key: 'linux-deb', label: '.deb' },
+    { key: 'linux-rpm', label: '.rpm' },
+  ],
+};
 
 function PlatformMark({ id }: { id: string }) {
   if (id === 'windows') {
@@ -37,9 +47,76 @@ function PlatformMark({ id }: { id: string }) {
   );
 }
 
+function PlatformAction(props: {
+  id: string;
+  label: string;
+  checking: string;
+  latest: ReturnType<typeof useLatestRelease>;
+  versionLine: string;
+  otherFormats: string;
+  checksums: string;
+  lang: string;
+  onUnavailable: () => void;
+}) {
+  const { id, label, checking, latest, versionLine, otherFormats, checksums, lang, onUnavailable } = props;
+  const main = latest.status === 'ready' ? latest.release.files[MAIN_FILE[id]] : undefined;
+
+  // Még nincs kiadás (vagy a szerver nem érhető el): a "hamarosan" üzenet, nem halott link.
+  if (latest.status === 'none' || (latest.status === 'ready' && !main)) {
+    return (
+      <button type="button" className="btn btn-primary btn-block" onClick={onUnavailable}>
+        {label}
+      </button>
+    );
+  }
+  if (latest.status === 'loading' || !main) {
+    return (
+      <button type="button" className="btn btn-primary btn-block" disabled aria-busy="true">
+        {checking}
+      </button>
+    );
+  }
+
+  const others = (OTHER_FILES[id] ?? []).flatMap((o) => {
+    const f = latest.release.files[o.key];
+    return f ? [{ ...o, file: f }] : [];
+  });
+
+  return (
+    <>
+      <a className="btn btn-primary btn-block" href={fileUrl(main)} rel="noopener" download>
+        {label}
+      </a>
+      <p className="platform-meta">
+        {fill(versionLine, { version: latest.release.version, size: fmtSize(main.size, lang) })}
+      </p>
+      {/* Minden kártyán két meta-sor van (Linuxon a további formátumokkal), hogy a gombok egy vonalban maradjanak. */}
+      <p className="platform-meta">
+        {others.length > 0 && (
+          <>
+            {otherFormats}{' '}
+            {others.map((o) => (
+              <span key={o.key}>
+                <a href={fileUrl(o.file)} rel="noopener" download>
+                  {o.label}
+                </a>
+                {' · '}
+              </span>
+            ))}
+          </>
+        )}
+        <a href={CHECKSUMS_URL} rel="noopener">
+          {checksums}
+        </a>
+      </p>
+    </>
+  );
+}
+
 export default function Downloads() {
   const showNotYet = useNotYet();
-  const { t, path } = useI18n();
+  const { t, path, lang } = useI18n();
+  const latest = useLatestRelease();
 
   return (
     <section id={t.sections.downloads} className="section">
@@ -59,13 +136,17 @@ export default function Downloads() {
               <h3>{p.name}</h3>
               <p className="platform-detail">{p.detail}</p>
               <span className="platform-file">{p.file}</span>
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={() => showNotYet('download')}
-              >
-                {fill(t.downloads.cta, { os: p.name })}
-              </button>
+              <PlatformAction
+                id={PLATFORM_IDS[i]}
+                label={fill(t.downloads.cta, { os: p.name })}
+                checking={t.downloads.checking}
+                latest={latest}
+                versionLine={t.downloads.versionLine}
+                otherFormats={t.downloads.otherFormats}
+                checksums={t.downloads.checksums}
+                lang={lang}
+                onUnavailable={() => showNotYet('download')}
+              />
             </article>
           ))}
         </div>
