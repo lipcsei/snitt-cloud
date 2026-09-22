@@ -432,6 +432,8 @@ export const en: Strings = {
     navAria: 'Footer navigation',
     source: 'Source code',
     releases: 'Releases',
+    legalPrivacy: 'Privacy Policy',
+    legalTerms: 'Terms of Service',
     bottom: 'All processing runs locally. Your video library never leaves your machine.',
   },
 
@@ -597,5 +599,12 @@ export const en: Strings = {
   common: {
     backToDownloads: '← Back to the download',
     backToHome: '← Back to the home page',
+  },
+
+  cookieBanner: {
+    message: 'We use cookies to measure site traffic (Google Analytics), only with your consent.',
+    accept: 'Accept',
+    reject: 'Decline',
+    link: 'Privacy Policy',
   },
 };

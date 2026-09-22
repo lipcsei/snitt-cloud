@@ -30,6 +30,8 @@ export default function Footer() {
           <a href={RELEASES_URL} target="_blank" rel="noreferrer noopener">
             {t.footer.releases}
           </a>
+          <Link to="/adatvedelem">{t.footer.legalPrivacy}</Link>
+          <Link to="/aszf">{t.footer.legalTerms}</Link>
         </nav>
       </div>
 

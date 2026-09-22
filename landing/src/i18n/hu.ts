@@ -440,6 +440,8 @@ export const hu: Strings = {
     navAria: 'Lábléc navigáció',
     source: 'Forráskód',
     releases: 'Kiadások',
+    legalPrivacy: 'Adatvédelem',
+    legalTerms: 'ÁSZF',
     bottom: 'Minden feldolgozás helyben fut. A videótárad nem hagyja el a gépedet.',
   },
 
@@ -605,5 +607,12 @@ export const hu: Strings = {
   common: {
     backToDownloads: '← Vissza a letöltéshez',
     backToHome: '← Vissza a főoldalra',
+  },
+
+  cookieBanner: {
+    message: 'Sütiket használunk a látogatottság mérésére (Google Analytics). Ezt csak a hozzájárulásoddal tesszük.',
+    accept: 'Elfogadom',
+    reject: 'Nem kérem',
+    link: 'Adatvédelem',
   },
 };

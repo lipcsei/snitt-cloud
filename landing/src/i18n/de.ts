@@ -440,6 +440,8 @@ export const de: Strings = {
     navAria: 'Navigation in der Fußzeile',
     source: 'Quellcode',
     releases: 'Releases',
+    legalPrivacy: 'Datenschutz',
+    legalTerms: 'AGB',
     bottom: 'Die gesamte Verarbeitung läuft lokal. Deine Videosammlung verlässt deinen Rechner nicht.',
   },
 
@@ -605,5 +607,12 @@ export const de: Strings = {
   common: {
     backToDownloads: '← Zurück zum Download',
     backToHome: '← Zurück zur Startseite',
+  },
+
+  cookieBanner: {
+    message: 'Wir verwenden Cookies zur Reichweitenmessung (Google Analytics), nur mit deiner Zustimmung.',
+    accept: 'Akzeptieren',
+    reject: 'Ablehnen',
+    link: 'Datenschutz',
   },
 };

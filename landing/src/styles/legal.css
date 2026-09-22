@@ -1,0 +1,80 @@
+/* Jogi oldalak (Adatvédelem, ÁSZF): sűrű, olvasható szedés - dokumentum, nem landing. */
+
+.legal-page {
+  padding-bottom: clamp(64px, 8vw, 110px);
+}
+
+.legal-notice {
+  margin: 0 0 32px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.legal-notice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.legal-notice p + p {
+  margin-top: 8px;
+}
+
+.legal-effective {
+  margin: 0 0 32px;
+}
+
+.legal-content section {
+  margin: 0 0 32px;
+}
+
+.legal-content h2 {
+  margin: 0 0 12px;
+  font-size: 1.16rem;
+  letter-spacing: -0.012em;
+}
+
+.legal-content p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal-content p:last-child {
+  margin-bottom: 0;
+}
+
+.legal-content strong {
+  color: var(--text);
+}
+
+.legal-content ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal-content ul:last-child {
+  margin-bottom: 0;
+}
+
+.legal-content ul li {
+  margin-bottom: 6px;
+}
+
+.legal-content ul li:last-child {
+  margin-bottom: 0;
+}
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}

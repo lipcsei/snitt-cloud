@@ -237,6 +237,10 @@ export type Strings = {
     navAria: string;
     source: string;
     releases: string;
+    /** A jogi oldalak (Adatvédelem / ÁSZF) lábléc-hivatkozásainak felirata. A célútvonal
+     *  (/adatvedelem, /aszf) nyelvtől függetlenül ugyanaz, csak a felirat fordított. */
+    legalPrivacy: string;
+    legalTerms: string;
     bottom: string;
   };
 
@@ -295,6 +299,15 @@ export type Strings = {
   common: {
     backToDownloads: string;
     backToHome: string;
+  };
+
+  /** A cookie-elfogadó sáv szövegei (Google Analytics, kizárólag hozzájárulással). */
+  cookieBanner: {
+    message: string;
+    accept: string;
+    reject: string;
+    /** A sávban lévő, az Adatvédelmi tájékoztatóra mutató hivatkozás felirata. */
+    link: string;
   };
 };
 
