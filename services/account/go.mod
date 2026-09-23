@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/getsentry/sentry-go v0.44.1
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/lipcsei/commons v0.1.0
+	github.com/lipcsei/commons v0.1.1
 )
 
 require (
