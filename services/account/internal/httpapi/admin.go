@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lipcsei/commons/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 
@@ -69,7 +69,7 @@ func mergeUser(ku keycloak.User, p *store.Profile, sub *store.Subscription) admi
 		EmailVerified: ku.EmailVerified,
 		Subscription:  sub,
 	}
-	if t := ku.CreatedAt(); !t.IsZero() {
+	if t := ku.CreatedAt; !t.IsZero() {
 		u.RegisteredAt = &t
 	}
 	if p != nil {

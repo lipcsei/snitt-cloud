@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
+	"github.com/lipcsei/commons/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 

@@ -14,7 +14,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 
-	"github.com/lipcsei/snitt-cloud/services/account/internal/errtrack"
+	"github.com/lipcsei/commons/errtrack"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 

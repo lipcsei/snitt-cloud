@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lipcsei/commons/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 

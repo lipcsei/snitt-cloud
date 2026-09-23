@@ -8,7 +8,7 @@ APPS := landing admin
 # A mentő szkriptek compose-a ebből az env-fájlból helyettesít. Helyben nem kell (mindennek van
 # alapértéke); élesben, a VPS-en: make backup DOTENV=deploy/.env.prod BACKUP_DIR=/var/backups/snitt
 DOTENV ?=
-SCRIPT_ENV := $(if $(DOTENV),COMPOSE_ENV_FILES=$(abspath $(DOTENV)))
+COMPOSE_ENV_FILE := $(abspath $(DOTENV))
 
 .PHONY: help need-sso up down logs ps install dev-account dev-landing dev-admin og \
         fmt lint test build compose-check check backup restore
@@ -79,8 +79,12 @@ check: lint test build ## Amit a CI futtat
 ## ---- Mentés ----
 backup: ## A "snitt" Postgres-adatbázis mentése: make backup BACKUP_DIR=/mentesek/helye
 	@test -n "$(BACKUP_DIR)" || { echo "Add meg, hova mentsen: make backup BACKUP_DIR=/mentesek/helye" >&2; exit 1; }
-	$(SCRIPT_ENV) ./deploy/scripts/backup.sh "$(BACKUP_DIR)"
+	PROJECT_NAME=snitt DB_ENGINE=postgres DB_SERVICE=postgres DB_NAME=snitt DB_USER=snitt \
+		COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE) \
+		./.commons/ops/backup.sh "$(BACKUP_DIR)"
 
 restore: ## Visszaállítás (FELÜLÍRJA az adatbázist!): make restore FILE=/mentesek/snitt-….sql.gz
 	@test -n "$(FILE)" || { echo "Add meg a mentést: make restore FILE=/mentesek/snitt-….sql.gz" >&2; exit 1; }
-	$(SCRIPT_ENV) ./deploy/scripts/restore.sh "$(FILE)"
+	PROJECT_NAME=snitt DB_ENGINE=postgres DB_SERVICE=postgres DB_NAME=snitt DB_USER=snitt \
+		COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE) STOP_SERVICES=account \
+		./.commons/ops/restore.sh "$(FILE)"

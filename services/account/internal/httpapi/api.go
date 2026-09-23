@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lipcsei/commons/errtrack/errtrackhttp"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/errtrack"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 
@@ -114,13 +114,13 @@ func (a *API) Handler() http.Handler {
 
 	a.adminRoutes(mux)
 
-	return errtrack.Middleware(a.cors(mux))
+	return errtrackhttp.Middleware(a.cors(mux))
 }
 
 func (a *API) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	if err := a.store.Ping(r.Context()); err != nil {
 		a.log.WarnContext(r.Context(), "healthz: adatbázis nem elérhető", "error", err)
-		errtrack.Report(r, err, http.StatusServiceUnavailable)
+		errtrackhttp.Report(r, err, http.StatusServiceUnavailable)
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "degraded", "database": "down"})
 		return
 	}
@@ -310,6 +310,6 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 // hívás előtti naplózás a szerver logjába megy, ez az error trackerbe. Válaszonként legfeljebb
 // egyszer hívandó, különben egy hibából több esemény lesz.
 func serverError(w http.ResponseWriter, r *http.Request, err error, status int, msg string) {
-	errtrack.Report(r, err, status)
+	errtrackhttp.Report(r, err, status)
 	writeError(w, status, msg)
 }

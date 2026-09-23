@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lipcsei/commons/errtrack"
+	"github.com/lipcsei/commons/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/config"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/errtrack"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/httpapi"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 
@@ -75,8 +75,15 @@ func run(log *slog.Logger) error {
 
 	// Az admin felület a Keycloak Admin API-n keresztül olvassa a
 	// felhasználókat. A kliens lustán kér tokent, ezért ez nem hálózati hívás.
-	directory := keycloak.NewAdminClient(cfg.KeycloakBaseURL, cfg.KeycloakRealm,
-		cfg.AdminClientID, cfg.AdminClientSecret)
+	directory, err := keycloak.New(keycloak.Config{
+		BaseURL:      cfg.KeycloakBaseURL,
+		Realm:        cfg.KeycloakRealm,
+		ClientID:     cfg.AdminClientID,
+		ClientSecret: cfg.AdminClientSecret,
+	})
+	if err != nil {
+		return err
+	}
 	log.Info("keycloak admin kliens kész",
 		"base_url", cfg.KeycloakBaseURL, "realm", cfg.KeycloakRealm, "client_id", cfg.AdminClientID)
 

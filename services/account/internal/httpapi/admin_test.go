@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lipcsei/commons/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
-	"github.com/lipcsei/snitt-cloud/services/account/internal/keycloak"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/store"
 )
 
@@ -537,7 +537,7 @@ func TestAdminRoutesRequireAdminRole(t *testing.T) {
 
 func TestListUsersMergesKeycloakAndProfile(t *testing.T) {
 	dir := &fakeDirectory{users: []keycloak.User{
-		{ID: "u1", Username: "anna", Email: "anna@example.com", FirstName: "Anna", LastName: "Kis", Enabled: true, EmailVerified: true, CreatedTimestamp: 1700000000000},
+		{ID: "u1", Username: "anna", Email: "anna@example.com", FirstName: "Anna", LastName: "Kis", Enabled: true, EmailVerified: true, CreatedAt: time.UnixMilli(1700000000000).UTC()},
 		{ID: "u2", Username: "bela", Email: "bela@example.com", Enabled: false},
 	}}
 	st := &fakeStore{admin: adminFake{
