@@ -11,6 +11,7 @@ import Terms from './pages/Terms';
 import { NotYetProvider } from './NotYetProvider';
 import { AnalyticsConsentProvider } from './features/consent/AnalyticsConsentProvider';
 import ConsentBanner from './features/consent/ConsentBanner';
+import EmailVerifyBanner from './features/emailVerify/EmailVerifyBanner';
 import { DEFAULT_LANG, LanguageProvider, PATHS, entryLang } from './i18n';
 
 /**
@@ -67,6 +68,7 @@ export default function App() {
             </Routes>
             <Footer />
             <ConsentBanner />
+            <EmailVerifyBanner />
           </div>
         </AnalyticsConsentProvider>
       </NotYetProvider>

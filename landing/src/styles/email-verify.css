@@ -1,0 +1,47 @@
+/* "Erősítsd meg az e-mail címed" kártya (EmailVerifyBanner.tsx). Nem modális: lebegő, önálló
+   kártya a nézet TETEJÉN, jobbra - szándékosan NEM a cookie-bar mintája (alul, széltől szélig),
+   hogy a két sáv (ha épp mindkettő látszik) sosem fedje egymást. */
+
+.email-verify-card {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 60;
+  width: min(360px, calc(100vw - 32px));
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--panel-2);
+  box-shadow: var(--shadow);
+}
+
+.email-verify-card-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.email-verify-card-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.email-verify-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (max-width: 560px) {
+  .email-verify-card {
+    left: 16px;
+    width: auto;
+  }
+  .email-verify-card-actions .btn {
+    flex: 1 1 0;
+  }
+}

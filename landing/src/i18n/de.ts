@@ -615,4 +615,11 @@ export const de: Strings = {
     reject: 'Ablehnen',
     link: 'Datenschutz',
   },
+
+  emailVerify: {
+    title: 'Bestätige deine E-Mail-Adresse',
+    message: 'So verlierst du deinen Account nicht, falls du dein Passwort vergisst. Snitt kannst du in der Zwischenzeit ganz normal weiter nutzen.',
+    confirm: 'Jetzt bestätigen',
+    dismiss: 'Nicht jetzt',
+  },
 };

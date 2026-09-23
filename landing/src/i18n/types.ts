@@ -309,6 +309,14 @@ export type Strings = {
     /** A sávban lévő, az Adatvédelmi tájékoztatóra mutató hivatkozás felirata. */
     link: string;
   };
+
+  /** A "nincs megerősítve az e-mail címed" lebegő kártya - sosem blokkol, csak felkínálja a megerősítést. */
+  emailVerify: {
+    title: string;
+    message: string;
+    confirm: string;
+    dismiss: string;
+  };
 };
 
 /** Egy képernyőkép: fülfelirat, magyarázat és alt szöveg. */

@@ -28,6 +28,15 @@ export type AuthState = {
   login: () => void;
   register: () => void;
   logout: () => void;
+  /**
+   * Elküldi a felhasználót a Keycloak-hoz, hogy CSAK az e-mail cím
+   * megerősítését végezze el (kc_action=VERIFY_EMAIL, "Application Initiated
+   * Action") a meglévő munkamenettel, majd vissza - nincs kijelentkezés,
+   * nincs új belépés. A realm sosem blokkolja emiatt a belépést (l.
+   * sso/realms/snitt-realm.json verifyEmail: false), ez a felhasználó saját
+   * kezdeményezése.
+   */
+  verifyEmail: () => void;
   accountUrl: string;
 };
 
@@ -105,6 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safely(() => keycloak.logout({ redirectUri: home }));
   }, [home]);
 
+  const verifyEmail = useCallback(() => {
+    safely(() => keycloak.login({ action: 'VERIFY_EMAIL', redirectUri: here, locale: lang }));
+  }, [here, lang]);
+
   const value = useMemo<AuthState>(
     () => ({
       ready,
@@ -113,9 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      verifyEmail,
       accountUrl: accountConsoleUrl(),
     }),
-    [ready, authenticated, profile, login, register, logout],
+    [ready, authenticated, profile, login, register, logout, verifyEmail],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

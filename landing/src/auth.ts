@@ -46,6 +46,7 @@ export const AUTH_INIT_TIMEOUT_MS = 4000;
 export type Profile = {
   name: string;
   email: string;
+  emailVerified: boolean;
 };
 
 type IdClaims = {
@@ -54,6 +55,7 @@ type IdClaims = {
   family_name?: string;
   preferred_username?: string;
   email?: string;
+  email_verified?: boolean;
 };
 
 export function readProfile(): Profile | null {
@@ -64,7 +66,7 @@ export function readProfile(): Profile | null {
   const fullName =
     claims.name || composed || claims.preferred_username || claims.email || 'Felhasználó';
 
-  return { name: fullName, email: claims.email ?? '' };
+  return { name: fullName, email: claims.email ?? '', emailVerified: claims.email_verified === true };
 }
 
 export function accountConsoleUrl(): string {

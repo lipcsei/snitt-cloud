@@ -615,4 +615,11 @@ export const hu: Strings = {
     reject: 'Nem kérem',
     link: 'Adatvédelem',
   },
+
+  emailVerify: {
+    title: 'Erősítsd meg az e-mail címed',
+    message: 'Ez véd meg attól, hogy elveszítsd a fiókod, ha elfelejted a jelszavad. Addig is ugyanúgy használhatod a Snittet.',
+    confirm: 'Megerősítés',
+    dismiss: 'Most nem',
+  },
 };

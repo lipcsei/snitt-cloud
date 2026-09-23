@@ -607,4 +607,11 @@ export const en: Strings = {
     reject: 'Decline',
     link: 'Privacy Policy',
   },
+
+  emailVerify: {
+    title: 'Verify your email address',
+    message: 'This protects your account from being lost if you forget your password. You can keep using Snitt either way.',
+    confirm: 'Verify now',
+    dismiss: 'Not now',
+  },
 };
