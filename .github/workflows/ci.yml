@@ -21,8 +21,30 @@ jobs:
     defaults:
       run:
         working-directory: services/account
+    env:
+      # Az account service a privát github.com/lipcsei/commons modult is importálja (errtrack,
+      # keycloak); a go parancsnak ezt git-tel, nem a nyilvános module-proxyval/checksum-
+      # adatbázissal kell elérnie.
+      GOPRIVATE: github.com/lipcsei/*
     steps:
+      # A repó checkoutja a beépített GITHUB_TOKEN-nel megy (ssh-key nélkül): az csak ehhez a
+      # repóhoz ad jogot. A .commons submodule és a "go mod download" viszont a KÜLÖN, csak a
+      # commons repóra érvényes COMMONS_DEPLOY_KEY-t igényli - ezért a submodule-checkoutot itt
+      # szándékosan kikapcsoljuk, és alább, SSH-ügynökkel külön húzzuk le.
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: SSH-ügynök a commons repóhoz (submodule + go mod download)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.COMMONS_DEPLOY_KEY }}
+      - name: A .commons submodule lehúzása SSH-n
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git submodule update --init --recursive
+      - name: "go mod download / go get is SSH-n menjen a github.com/lipcsei/*-hoz"
+        run: git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
       - uses: actions/setup-go@v5
         with:
           go-version-file: services/account/go.mod

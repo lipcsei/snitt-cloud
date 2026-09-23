@@ -115,6 +115,18 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # A .commons submodule (github.com/lipcsei/commons) és a "go mod download" a build alatt
+            # a szerveren előre kihelyezett, csak-olvasható deploy-kulcsot használja (nem a
+            # VPS_SSH_KEY-t, amivel ez a script maga is ide jutott - az a szerverhez ad hozzáférést,
+            # nem a commonshoz).
+            mkdir -p ~/.ssh
+            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+            eval "$(ssh-agent -s)" >/dev/null
+            trap 'ssh-agent -k >/dev/null' EXIT
+            ssh-add ~/.ssh/commons_deploy_key
+
+            git submodule update --init --recursive
+
             # A "landing" szándékosan hiányzik: az GitHub Pages-en fut.
             #
             # A "keycloak" és a TLS-terminátor ("caddy") is szándékosan
@@ -127,7 +139,7 @@ jobs:
             # edge-net hálózatra csatlakoznak, amiket azok hoznak létre.
             docker compose --env-file deploy/.env.prod \
               -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
-              up -d --build postgres account admin
+              up -d --build --ssh default postgres account admin
 
             # A régi image-rétegek felszaporodnának minden deploy-jal.
             docker image prune -f

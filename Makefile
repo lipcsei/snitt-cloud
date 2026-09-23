@@ -21,7 +21,9 @@ need-sso:
 
 ## ---- Fejlesztői stack (Docker Compose) ----
 up: need-sso ## Postgres + account + admin + landing (a közös sso Keycloaknak előbb futnia kell)
-	$(COMPOSE) up --build -d
+	# --ssh default: a build így éri el a privát github.com/lipcsei/commons modult (a saját,
+	# GitHubhoz már hozzáférő SSH-ügynöködön keresztül; lásd deploy/docker-compose.yml "ssh: [default]").
+	$(COMPOSE) up --build --ssh default -d
 	@echo "API: http://localhost:8090   Admin: http://localhost:5175   Landing: http://localhost:8088   Keycloak: http://localhost:8081"
 
 down: ## Leállítás (az adatok megmaradnak; teljes törlés: docker compose -f deploy/docker-compose.yml down -v)
