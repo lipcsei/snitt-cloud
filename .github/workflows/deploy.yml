@@ -24,30 +24,110 @@ on:
     workflows: ["CI"]
     branches: [main]
     types: [completed]
-  # Kézi újrafuttatás: a VPS_ENV frissítése után, vagy push nélküli újratelepítéshez.
+  # Kézi újrafuttatás, ha a szerveren kellett valamit tisztázni, vagy csak
+  # a VPS_ENV secret frissítése után kell újraküldeni build nélkül.
   workflow_dispatch:
 
-# Két deploy soha ne fusson egyszerre (ugyanazokért a konténerekért versenyeznének).
+# Két deploy soha ne fusson egyszerre (ugyanazokért a konténerekért
+# versenyeznének).
 concurrency:
   group: deploy-snitt-cloud
   cancel-in-progress: false
 
 jobs:
-  # A kitelepítés lépései KÖZÖSEK: a lipcsei/workflows repó deploy-vps.yml workflow-ja végzi (ott van
-  # leírva, mit csinál és mire figyel). Itt csak az áll, MIKOR fusson és MIVEL.
   deploy:
-    # Piros CI-ból soha nem megy ki semmi élesre.
+    name: Kitelepítés SSH-n
+    runs-on: ubuntu-latest
+    # workflow_run esetén csak akkor fusson, ha az előző CI zöld volt -
+    # egy piros CI-ból soha ne menjen ki semmi élesre.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    uses: lipcsei/workflows/.github/workflows/deploy-vps.yml@v1
-    secrets: inherit
-    with:
-      app: snitt-cloud
-      environment: snitt-cloud-prod
-      # A compose-fájlok és a .env.prod a deploy/ könyvtárban vannak.
-      compose_dir: deploy
-      # A "landing" szándékosan hiányzik: az GitHub Pages-en fut. A Keycloak a megosztott sso repóban,
-      # a 80/443 a megosztott edge proxyban él - azoknak saját deploy workflow-juk van, és ELŐBB kell
-      # futniuk, mint ennek (sso -> edge -> ez), mert a konténereink az ő hálózataikra csatlakoznak.
-      services: postgres account admin
-      required_networks: sso-net edge-net
-      log_services: account admin
+    # A secretek (VPS_HOST/VPS_USER/VPS_SSH_KEY/VPS_ENV) a
+    # "snitt-cloud-prod" Environmenthez vannak felvéve a repo
+    # Settings-jében - environment secretek NEM látszanak egy jobnak, ha az
+    # nem hivatkozik rájuk ezzel a mezővel. Ha az environment nem létezik
+    # (pl. törölték vagy átnevezték), a GitHub a futáskor ÜRESEN létrehozza -
+    # ilyenkor minden secret hiányzik.
+    environment: snitt-cloud-prod
+    steps:
+      # Ha egy secret hiányzik vagy üres, itt álljon meg, és NÉV SZERINT mondja
+      # meg, melyik az (az értéküket soha nem írja ki). Enélkül az scp csak
+      # annyit mond, hogy "missing server host".
+      - name: Beállítások ellenőrzése
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER || secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_ENV: ${{ secrets.VPS_ENV }}
+          # Csak azt, hogy LÉTEZIK-e ilyen változó, a tartalmát nem: a változót a napló nem takarja ki.
+          PLAIN_VARS: ${{ format('{0}{1}', vars.VPS_SSH_KEY && ' VPS_SSH_KEY' || '', vars.VPS_ENV && ' VPS_ENV' || '') }}
+        run: |
+          if [ -n "$PLAIN_VARS" ]; then
+            echo "::error::Ezeknek SECRETNEK kell lenniük, nem változónak (a változó sima szövegként tárolódik és naplózódik):$PLAIN_VARS. Vedd fel őket a snitt-cloud-prod environment Environment secrets részébe, és töröld a változót."
+            exit 1
+          fi
+          missing=""
+          for name in VPS_HOST VPS_USER VPS_SSH_KEY VPS_ENV; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Hiányzik a 'snitt-cloud-prod' environmentből:$missing. A VPS_HOST és a VPS_USER lehet Environment variable vagy secret, a VPS_SSH_KEY és a VPS_ENV csak Environment secret. Lásd docs/VPS-TELEPITES.md, 7. pont."
+            exit 1
+          fi
+
+      # Fájlba írjuk a runneren, hogy utána scp-vel egyben át tudjuk vinni -
+      # "printf '%s'" (nem echo), hogy a fájl tartalma karakterre pontosan a
+      # secret értéke legyen, sortörés-értelmezés vagy escape-elés nélkül.
+      - name: .env.prod előállítása a secretből
+        env:
+          ENV_PROD: ${{ secrets.VPS_ENV }}
+        run: printf '%s' "$ENV_PROD" > .env.prod.upload
+
+      - name: .env.prod feltöltése a szerverre
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER || secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ vars.VPS_SSH_PORT || secrets.VPS_SSH_PORT || '22' }}
+          source: ".env.prod.upload"
+          target: "/opt/snitt-cloud/deploy/"
+
+      - name: Kitelepítés
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER || secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ vars.VPS_SSH_PORT || secrets.VPS_SSH_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/snitt-cloud
+
+            # A frissen feltöltött .env.prod.upload-ot a helyére tesszük,
+            # MIELŐTT git reset-elünk - a reset --hard csak a verziókövetett
+            # fájlokat állítja vissza, a nem verziókövetett (gitignore-olt)
+            # deploy/.env.prod-hoz nem nyúl, tehát a sorrend itt nem számít,
+            # de így korábban a helyén van, ha a compose lépés bármit olvas.
+            mv deploy/.env.prod.upload deploy/.env.prod
+            chmod 600 deploy/.env.prod
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            # A "landing" szándékosan hiányzik: az GitHub Pages-en fut.
+            #
+            # A "keycloak" és a TLS-terminátor ("caddy") is szándékosan
+            # hiányzik: a Keycloak a megosztott sso repóban fut
+            # (https://github.com/lipcsei/sso), a 80/443-at pedig egyetlen
+            # megosztott proxy kezeli minden appnak
+            # (https://github.com/lipcsei/edge). Ez a workflow egyiket sem
+            # telepíti - azoknak saját deploy workflow-juk van, és ELŐBB
+            # kell futniuk, mint ennek (sso -> edge -> ez), mert a konténereink az sso-net és az
+            # edge-net hálózatra csatlakoznak, amiket azok hoznak létre.
+            docker compose --env-file deploy/.env.prod \
+              -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
+              up -d --build postgres account admin
+
+            # A régi image-rétegek felszaporodnának minden deploy-jal.
+            docker image prune -f
