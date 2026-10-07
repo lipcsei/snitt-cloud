@@ -1,6 +1,6 @@
 # Snitt account szolgáltatás
 
-Kicsi Go HTTP szolgáltatás a Snitt **opcionális felhő oldalához**. Két dolgot csinál:
+Kicsi Go HTTP szolgáltatás a Snitt **opcionális felhő oldalához**. Négy dolgot csinál:
 
 1. **Profil** – a landing oldalon regisztrált felhasználó alkalmazás-oldali profilját tárolja
    (megjelenítendő név, nyelv). Az identitást (jelszó, e-mail, `sub`) a Keycloak birtokolja,
@@ -9,8 +9,8 @@ Kicsi Go HTTP szolgáltatás a Snitt **opcionális felhő oldalához**. Két dol
    Ezt később a desktop app is le fogja kérdezni; a végpont már most létezik.
 3. **Admin API** – a belső admin felület ([`admin/`](../../admin)) mögötti végpontok:
    felhasználók, előfizetések, számlázás és összesítők. Csak `admin` realm szereppel.
-4. **Admin napló** – minden előfizetést és számlát módosító admin művelet nyomot hagy az
-   `admin_audit` táblában: ki, mikor, mit csinált.
+4. **Admin napló** – minden előfizetést, számlát, jogosultságot és fiókállapotot módosító admin
+   művelet nyomot hagy az `admin_audit` táblában: ki, mikor, mit csinált.
 
 A desktop app ettől függetlenül, fiók nélkül is teljesen működik – lásd
 [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
@@ -19,24 +19,32 @@ A desktop app ettől függetlenül, fiók nélkül is teljesen működik – lá
 
 ### A teljes fejlesztői stack (ajánlott)
 
-A repo gyökeréből:
+A Keycloak a közös [`sso`](https://github.com/lipcsei/sso) repóban fut (`http://localhost:8081`, benne a
+`snitt` realm), azt kell **előbb** elindítani. Utána a repo gyökeréből:
 
 ```bash
-docker compose -f deploy/docker-compose.yml up --build
+make -C ../sso up     # a közös Keycloak; ő hozza létre az sso-net hálózatot
+make up
 ```
 
-Ez elindítja a Postgrest, a Keycloakot (`http://localhost:8081`, admin: `admin` / `admin`,
-`snitt` realm importtal) és ezt a szolgáltatást a `http://localhost:8090` címen.
+Ez elindítja a Postgrest, az admint, a landinget és ezt a szolgáltatást a `http://localhost:8090` címen.
+A kép építése a privát `github.com/lipcsei/commons` Go modult SSH-n éri el (`--ssh default`), ezért
+olyan SSH-ügynök kell, ami hozzáfér a GitHubhoz.
 
 ### Csak a szolgáltatás, helyben
 
-Feltételezi, hogy a Postgres és a Keycloak már fut.
+Feltételezi, hogy a Postgres és a Keycloak már fut. A repo gyökeréből a `make dev-account` ugyanezt
+csinálja (létrehozza a `.env`-et, és előbb leállítja a compose `account` konténerét, ami ugyanazt a
+8090-es portot fogja):
 
 ```bash
 cp .env.example .env      # majd szerkeszd, ha kell
 set -a && source .env && set +a
 go run ./cmd/server
 ```
+
+A privát `commons` modul miatt a `go` parancsnak kell a `GOPRIVATE=github.com/lipcsei/*` beállítás és
+git-hozzáférés a repóhoz.
 
 Az adatbázis-séma indulásnál automatikusan létrejön (beágyazott `schema.sql`,
 csupa `CREATE TABLE IF NOT EXISTS`), külön migrációs lépés nincs.
@@ -46,6 +54,9 @@ csupa `CREATE TABLE IF NOT EXISTS`), külön migrációs lépés nincs.
 ```bash
 go build ./... && go vet ./... && go test ./...
 ```
+
+A repo gyökeréből: `make test` (csak a tesztek), `make lint` (gofmt-ellenőrzés, `go vet`,
+golangci-lint), `make check` (minden, amit a CI is futtat).
 
 A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellenőrzés az
 `auth.TokenVerifier` interfész mögött, a tárolás a `httpapi.Store` interfész mögött van kicserélve.
@@ -58,11 +69,11 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `DATABASE_URL` | `postgres://snitt:snitt@localhost:5432/snitt?sslmode=disable` | PostgreSQL kapcsolat. |
 | `KEYCLOAK_ISSUER` | `http://localhost:8081/realms/snitt` | A realm issuer URL-je; ennek egyeznie kell a tokenek `iss` claimjével. |
 | `KEYCLOAK_DISCOVERY_URL` | = `KEYCLOAK_ISSUER` | Opcionális. Akkor kell, ha a discovery más címen érhető el, mint az issuer (Dockerben: `http://keycloak:8080/realms/snitt`, az `sso-net` hálózaton). |
-| `KEYCLOAK_AUDIENCE` | `snitt-landing` | A tokenben elvárt `aud`. |
+| `KEYCLOAK_AUDIENCE` | `snitt-landing,snitt-admin` | A tokenben elfogadott `aud` értékek, vesszővel elválasztva (minden kliens a saját client id-jével kap tokent). |
 | `CORS_ORIGINS` | `http://localhost:5174,http://localhost:5175` | Vesszővel elválasztott lista a böngészőből hívó originokról (landing, admin). |
 | `KEYCLOAK_BASE_URL` | `http://localhost:8081` | A Keycloak gyökere az Admin REST API-hoz. Dockerben: `http://keycloak:8080` (az `sso-net` hálózaton). |
 | `KEYCLOAK_REALM` | `snitt` | A realm neve az Admin API útvonalakhoz. |
-| `KEYCLOAK_ADMIN_CLIENT_ID` | `snitt-admin-api` | Bizalmas, service accountos kliens a felhasználók olvasásához. |
+| `KEYCLOAK_ADMIN_CLIENT_ID` | `snitt-admin-api` | Bizalmas, service accountos kliens a felhasználók olvasásához és a fiók letiltásához. |
 | `KEYCLOAK_ADMIN_CLIENT_SECRET` | `snitt-admin-api-dev-secret` | Fejlesztői titok; élesben kötelezően felülírandó. |
 | `ADMIN_ROLE` | `admin` | Az a realm szerep, ami az `/api/v1/admin/*` végpontokat nyitja. |
 | `DEFAULT_CURRENCY` | `HUF` | Alapértelmezett pénznem (ISO 4217). |
@@ -94,7 +105,8 @@ Minden `/api/v1/...` végpont `Authorization: Bearer <access_token>` fejlécet v
 ### `GET /healthz`
 
 Hitelesítés nélkül hívható. Rövid időkorláttal megpingeli az adatbázist.
-`200` `{"status":"ok","database":"up"}`, vagy `503`, ha az adatbázis nem elérhető.
+`200` `{"status":"ok","database":"up"}`, vagy `503` `{"status":"degraded","database":"down"}`, ha az
+adatbázis nem elérhető.
 
 ### `GET /api/v1/me`
 
@@ -139,6 +151,33 @@ A hívó le nem járt jogosultságai. **Az üres lista normál válasz, nem hiba
 A válasz szándékosan objektum, nem csupasz tömb: így később bővíthető a kliensek törése nélkül.
 Jogosultságot az előfizetés kiadása ad ki automatikusan (a csomag `feature_keys` mezője
 szerint), a csomagon kívülieket pedig az admin, kézzel – lásd a következő végpontot.
+
+### Az admin API áttekintése
+
+Minden `/api/v1/admin/*` végpont az `ADMIN_ROLE` realm szerepet kéri; enélkül `403`. A teljes lista
+(`internal/httpapi/admin.go`), az alábbi szakaszok csak a nem magától értetődőket részletezik:
+
+| Végpont | Mit csinál |
+| --- | --- |
+| `GET /api/v1/admin/overview` | A vezérlőpult összesítői. |
+| `GET /api/v1/admin/plans` | A választható csomagok (`internal/billing`). |
+| `GET /api/v1/admin/users` | Felhasználólista a Keycloakból, a helyi profillal összefésülve. |
+| `GET /api/v1/admin/users/{subject}` | Egy felhasználó adatlapja. |
+| `PATCH /api/v1/admin/users/{subject}` | A Keycloak fiók engedélyezése / letiltása. |
+| `POST /api/v1/admin/users/{subject}/entitlements` | Kézi jogosultság-kiadás. |
+| `DELETE /api/v1/admin/users/{subject}/entitlements/{key}` | Jogosultság visszavonása. |
+| `GET /api/v1/admin/subscriptions` | Előfizetések listája. |
+| `POST /api/v1/admin/subscriptions` | Előfizetés kiadása. |
+| `GET /api/v1/admin/subscriptions/{id}` | Egy előfizetés. |
+| `PATCH /api/v1/admin/subscriptions/{id}` | Csomagváltás. |
+| `POST /api/v1/admin/subscriptions/{id}/cancel` | Lemondás. |
+| `POST /api/v1/admin/subscriptions/{id}/reactivate` | Visszakapcsolás. |
+| `GET /api/v1/admin/invoices` | Számlák listája. |
+| `POST /api/v1/admin/invoices` | Számla kiállítása. |
+| `GET /api/v1/admin/invoices/{id}` | Egy számla. |
+| `POST /api/v1/admin/invoices/{id}/pay` | Kifizetettre jelölés. |
+| `POST /api/v1/admin/invoices/{id}/void` | Sztornó. |
+| `GET /api/v1/admin/audit` | Az admin napló. |
 
 ### `POST /api/v1/admin/users/{subject}/entitlements`
 
@@ -214,8 +253,8 @@ művelet UTÁN, külön írásban történik, és a bukása **nem** bukatja el a
 lépés ilyenkor már megtörtént, egy hibás válasz csak félrevezetné az admint. A sikertelen
 naplóírás `ERROR` szinten kimegy a logba.
 
-Az `admin_audit` az account szolgáltatás adatbázisában van, tehát a
-[`deploy/scripts/backup.sh`](../../deploy/scripts/backup.sh) menti.
+Az `admin_audit` az account szolgáltatás adatbázisában van, tehát
+a repó `make backup` célja menti (lásd a gyökér [README](../../README.md)-jét).
 
 ## Felépítés
 
@@ -224,6 +263,9 @@ cmd/server/main.go        indítás, graceful shutdown
 internal/config           env-alapú konfiguráció
 internal/auth             OIDC token-ellenőrzés + middleware (TokenVerifier interfész)
 internal/store            pgxpool, beágyazott schema.sql, lekérdezések
+internal/billing          csomagok, csomag → funkciókulcs leképezés, a fizetési Provider interfész
 internal/httpapi          routing, handlerek, CORS, admin napló, tesztek
-internal/errtrack         opcionális hibajelentés (Sentry SDK): pánik és 5xx
 ```
+
+A hibajelentés (pánik és 5xx, Sentry SDK) és a Keycloak Admin API kliense nem itt él, hanem a közös,
+privát [`commons`](https://github.com/lipcsei/commons) Go modulban (`errtrack`, `keycloak`).

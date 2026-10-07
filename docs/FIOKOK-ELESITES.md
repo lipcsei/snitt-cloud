@@ -53,14 +53,16 @@ saját admint.
 
 ## 6. Keycloak bootstrap admin
 
-A `admin`/`admin` párost (`KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`) most
-a megosztott [sso](https://github.com/lipcsei/sso) repó saját `.env.prod`-ja
-adja, nem ez a repó. Élesben ott cseréld, és a Keycloak admin felületét ne
-tedd ki a nyilvános internetre.
+A Keycloak saját (master realmbeli) adminját (`KEYCLOAK_ADMIN`,
+`KEYCLOAK_ADMIN_PASSWORD`) most a megosztott
+[sso](https://github.com/lipcsei/sso) repó saját `.env.prod`-ja adja, nem ez
+a repó; a compose jelszó nélkül el sem indul. Élesben ott adj neki generált
+jelszót (ne a fejlesztői `.env.example` értékét), és a Keycloak admin
+felületét ne tedd ki a nyilvános internetre.
 
 ## 7. Mentés – és próbáld is ki
 
-A `deploy/scripts/backup.sh` itt csak az account szolgáltatás adatbázisát
+A `make backup` (a `.commons/ops/backup.sh` szkript) itt csak az account szolgáltatás adatbázisát
 menti (profilok, előfizetések, számlák). A Keycloak adatbázisa (felhasználók,
 jelszó-lenyomatok, kliensbeállítások, mindkét app realmje) külön van, a
 megosztott [sso](https://github.com/lipcsei/sso) repóban – annak saját
@@ -71,17 +73,24 @@ kell állítani.
 
 ```bash
 # naponta hajnali 3-kor
-0 3 * * * /opt/snitt/deploy/scripts/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
-0 3 * * * /opt/sso/scripts/backup.sh /var/backups/sso >> /var/log/sso-backup.log 2>&1
+0 3 * * * cd /opt/snitt-cloud && PROJECT_NAME=snitt DB_ENGINE=postgres DB_SERVICE=postgres DB_NAME=snitt DB_USER=snitt COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_ENV_FILE=/opt/snitt-cloud/deploy/.env.prod ./.commons/ops/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
+0 3 * * * COMPOSE_ENV_FILE=/opt/sso/.env.prod /opt/sso/scripts/backup.sh /var/backups/sso >> /var/log/sso-backup.log 2>&1
 ```
+
+A mentő szkript a `.commons` submodule-ban van, tehát a szerveren előbb `git submodule update --init`
+kell. A hosszú sor ugyanaz, amit helyben a `make backup DOTENV=deploy/.env.prod BACKUP_DIR=…` futtat;
+a szerveren nincs `make`. A `COMPOSE_ENV_FILE` nélkül a compose jelszavak híján nem renderel, és nem
+készül mentés.
 
 Két dolog, ami nélkül a mentés csak illúzió:
 
 - **Vidd le a VPS-ről.** Egy mentés ugyanazon a lemezen, ami elveszhet, nem
   mentés. `rsync`, `rclone` vagy a szolgáltató objektumtára – mindegy, csak
   máshol legyen.
-- **Állítsd is vissza egyszer.** A `restore.sh` megvan hozzá. Egy soha ki nem
-  próbált mentés nem mentés, csak remény.
+- **Állítsd is vissza egyszer.** A `.commons/ops/restore.sh` megvan hozzá
+  (helyben: `make restore FILE=…`; **felülírja** az adatbázist), az `sso`
+  repóban pedig a `scripts/restore.sh`. Egy soha ki nem próbált mentés nem
+  mentés, csak remény.
 
 ## Ami már jó, és nem kell hozzányúlni
 

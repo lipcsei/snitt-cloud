@@ -13,15 +13,16 @@ kötelező bejelentkezés, nincs hálózati hívás a működéshez.
 
 **A felhő oldal (ez a repo)** ehhez képest opcionális kiegészítés:
 
-- **landing** (React, `landing/`, `:5174`) – a marketing oldal, ahol a látogató regisztrálhat és
-  kezelheti a profilját.
+- **landing** (React, `landing/`, fejlesztés közben `:5174`) – a marketing oldal, ahol a látogató
+  regisztrálhat és kezelheti a profilját. Élesben statikus oldalként a GitHub Pages szolgálja ki
+  (`snitt.video`).
 - **admin** (React, `admin/`, `:5175`) – belső admin felület: felhasználók, előfizetések,
   számlázás. Nem publikus; a Keycloak `admin` realm szerepéhez kötött.
 - **Keycloak** – az identitásszolgáltató. Ő birtokolja a felhasználót: regisztráció, jelszó,
   e-mail-cím, a stabil `sub` azonosító. Saját kódot erre nem írunk. **Nem ebben a repóban fut**:
-  megosztott szolgáltatás ([`sso`](https://github.com/lipcsei/sso)), amit más appok (jelenleg a
-  `breath`) is használnak – ez a repo egy `snitt` nevű saját realmet kap benne, elkülönítve a
-  többi app felhasználóitól.
+  megosztott szolgáltatás ([`sso`](https://github.com/lipcsei/sso)), amit más appok (a `breath`,
+  a `gombamester`, a `glitchtip`) is használnak – ez a repo egy `snitt` nevű saját realmet kap
+  benne, elkülönítve a többi app felhasználóitól.
 - **account szolgáltatás** (Go, `services/account/`) – az egyetlen saját backend. A Keycloak
   által kiállított JWT-t ellenőrzi, és Postgresben tárolja az alkalmazás-oldali profilt
   (megjelenítendő név, nyelv), az **entitlementeket** (mely extra funkciók járnak), valamint az
@@ -40,6 +41,17 @@ Az identitás azért külön komponens (Keycloak), mert a hitelesítést nem ér
 megírni; minden más egy binárisban elfér. Ha később kell egy második szolgáltatás (pl. fizetés),
 az önállóan, ugyanezen a mintán jön be – az account szolgáltatás nem nő tovább.
 
+## Hol fut
+
+- **Helyben** a `deploy/docker-compose.yml` a Postgrest, az accountot (`:8090`), az admint
+  (`:5175`) és a landing production buildjét (`:8088`) indítja; a Keycloak (`:8081`) az `sso` repó
+  saját stackje, az account az `sso-net` Docker-hálózaton éri el.
+- **Élesben** a landing a GitHub Pages-re megy, az account, az admin és a Postgres pedig egy
+  VPS-re (`deploy/docker-compose.prod.yml`). TLS-t és nyilvános címet (`api.snitt.video`,
+  `admin.snitt.video`, `auth.snitt.video`) a megosztott [`edge`](https://github.com/lipcsei/edge)
+  proxy ad; saját proxy ebben a repóban nincs. Részletek:
+  [`VPS-TELEPITES.md`](VPS-TELEPITES.md).
+
 ## Az adatok folyása
 
 ```
@@ -56,7 +68,7 @@ az önállóan, ugyanezen a mintán jön be – az account szolgáltatás nem n�
      +-- JWKS / discovery --------> [ account (:8090) ] --> [ Postgres ]
      ^                                    |
      +-- Admin REST API (service account) +
-        (snitt-admin-api kliens, csak olvasás)
+        (snitt-admin-api kliens: olvasás + fiók letiltása)
 ```
 
 A landing böngészőből, PKCE-vel jelentkezik be a `snitt-landing` publikus kliensen, majd a
@@ -84,10 +96,15 @@ funkció, nem védelmi vonal.
 
 **Felhasználói adat.** Az identitást a Keycloak birtokolja, ezért az admin felhasználólistája
 onnan jön, a **Keycloak Admin REST API**-ról – egy bizalmas, service accountos kliensen
-(`snitt-admin-api`, `realm-management: view-users`, `query-users`). Ezt az account szolgáltatás
+(`snitt-admin-api`, `realm-management: view-users`, `query-users`, `manage-users`). Ezt az account szolgáltatás
 kéri le, és a helyi `profiles` sorral fésüli össze; a Keycloak adatait szándékosan **nem**
 másoljuk Postgresbe, hogy ne legyen két, egymástól elcsúszó igazság. Ennek az ára, hogy a
 Keycloak kiesésekor a felhasználólista nem elérhető (`502`), a többi képernyő viszont működik.
+Egyetlen admin művelet **ír** a Keycloakba: a fiók letiltása / engedélyezése
+(`PATCH /api/v1/admin/users/{subject}`), ehhez kell a `manage-users` szerep.
+
+**Napló.** Minden módosító admin művelet (előfizetés, számla, kézi jogosultság, fiókállapot)
+bejegyzést ír az `admin_audit` táblába; a napló csak nő, és a `GET /api/v1/admin/audit` olvassa.
 
 **Táblák.** A `subscriptions` a fizetős csomagok nyilvántartása (subject, csomag, státusz,
 elszámolási időszak, ár, `cancel_at_period_end`, külső azonosítók), az `invoices` pedig a saját
@@ -124,11 +141,12 @@ A séma ehhez már készen áll: a `subscriptions` és az `invoices` tábla is h
 
 ## A desktop app jövőbeli belépése
 
-A realmben már benne van a `snitt-desktop` publikus kliens (PKCE, `http://127.0.0.1:53312/callback`
-loopback redirect), de még nincs használatban. Amikor a desktop app bejelentkezik, ugyanazt a
+A realmben már benne van a `snitt-desktop` publikus kliens (PKCE, loopback redirect:
+`http://127.0.0.1:*`, `http://localhost:*`), de még nincs használatban. Amikor a desktop app bejelentkezik, ugyanazt a
 `GET /api/v1/entitlements` végpontot fogja hívni, amit a landing – nem kell külön API. A desktop
-kliens tokenjébe egy audience mapper teszi bele a `snitt-landing` audience-t, hogy az account
-szolgáltatásnak egyetlen elvárt audience-t kelljen ellenőriznie.
+kliens tokenjébe egy audience mapper teszi bele a `snitt-landing` audience-t (ahogy az admin
+kliensébe is), így az account szolgáltatás elfogadott audience-listáját (`KEYCLOAK_AUDIENCE`,
+alapból `snitt-landing,snitt-admin`) a desktop app miatt nem kell bővíteni.
 
 Fontos, hogy ez **opcionális marad**: a bejelentkezés csak extra funkciókat kapcsol be, a
 meglévő működés bejelentkezés nélkül változatlan.
