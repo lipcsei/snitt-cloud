@@ -1,9 +1,0 @@
-# trivy - amit szándékosan elengedünk, indoklással. A sima .trivyignore csak AZONOSÍTÓRA tud
-# szólni, fájlra nem: az itt felsorolt szabály a repó MINDEN fájljára el van engedve.
-
-# DS-0002 (nincs nem-root USER) - admin/Dockerfile. A sima nginx kép root-ként indul. A javítás az
-# nginx-unprivileged kép (a landing/Dockerfile már azon fut), de az a 8080-on hallgat, az éles
-# edge proxy pedig a snitt-admin:80 címet hívja: a képet, a deploy/docker-compose*.yml portjait és
-# az edge repó Caddyfile-ját EGYÜTT kell átállítani, különben az admin felület élesben elérhetetlen.
-# Ha ez megvan, ez a sor törlendő. (A másik két Dockerfile-ban van USER, azokat nem érinti.)
-DS-0002

@@ -27,13 +27,19 @@ ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
     VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
 RUN npm run build
 
-# A sima nginx kép root-ként indul (trivy DS-0002). A javítás az nginx-unprivileged kép lenne
-# (lásd landing/Dockerfile), de az a 8080-on hallgat, az éles edge proxy viszont a snitt-admin:80
-# címet hívja: a kettőt csak EGYÜTT lehet átállítani, ezért egyelőre el van engedve (.trivyignore).
-FROM nginx:1.27-alpine
+# nginx-unprivileged, nem a sima nginx: az utóbbi root-ként indul (trivy DS-0002). Ez a kép
+# uid 101-ként fut, mégis a 80-ason hallgat (nginx.conf), mert az éles edge proxy a
+# snitt-admin:80 címet hívja. Nem-root folyamat azért kötheti a 80-at, mert a Docker a 20.10-es
+# verzió óta a konténerekben 0-ra állítja a net.ipv4.ip_unprivileged_port_start-ot. Ha a konténer
+# valaha "bind() to 0.0.0.0:80 failed (13: Permission denied)" hibával áll meg, ez a sysctl hiányzik
+# (régi Docker, host hálózat): akkor compose-ban kell megadni, vagy 8080-ra váltani az edge-dzsel együtt.
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
+# A base image maga is erre állítja, de a Dockerfile-t vizsgáló eszközök (trivy) csak azt látják,
+# ami itt ki van írva.
+USER 101
 # 127.0.0.1 és nem localhost: a konténerben a localhost előbb ::1-re oldódik
 # fel, az nginx viszont alapból csak IPv4-en figyel - a healthcheck így
 # "connection refused"-ot kapna egy tökéletesen működő kiszolgálótól.
