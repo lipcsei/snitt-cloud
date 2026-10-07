@@ -1,0 +1,52 @@
+# A `make static-vuln` (trivy, govulncheck) MEGMONDJA, ha egy függőségben sebezhetőség van, de nem
+# emeli a verziót. A Dependabot PR-t nyit rá, amire lefut a teljes CI, tehát látszik, tör-e valamit.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /services/account
+    schedule:
+      interval: weekly
+      day: monday
+    # Egy frissen kiadott verzió ne kerüljön be azonnal: a kompromittált kiadások jellemzően
+    # napokon belül kiderülnek és visszavonják őket.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      # A golang.org/x/* csomagok együtt mozognak; külön PR-ekben csak egymásra várnának.
+      golang-x:
+        patterns: ["golang.org/x/*"]
+
+  - package-ecosystem: npm
+    directories: [/admin, /landing]
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      # A fejlesztői eszközök (linter, típusok, build) nem kerülnek a bundle-be, ezért egy PR-ben
+      # is átnézhetők.
+      dev-tooling:
+        dependency-type: development
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+
+  # A Dockerfile-ok alapképei (golang, node, nginx) és a workflow-k actionjei is elöregednek.
+  - package-ecosystem: docker
+    directories: [/admin, /landing, /services/account]
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+
+  # A SHA-ra rögzített actionöket a sor végi `# v5` megjegyzés alapján frissíti.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7

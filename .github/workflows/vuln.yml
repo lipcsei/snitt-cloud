@@ -1,0 +1,47 @@
+# Ismert sebezhetőségek a függőségekben (trivy + govulncheck).
+#
+# Szándékosan KÜLÖN, ütemezett workflow, nem a CI része: friss sebezhetőség-adatbázist tölt le, ezért
+# a kimenete a repó változása nélkül is változhat. A CI-ban egy ma bejelentett CVE megállítaná a
+# kitelepítést (a deploy a "CI" sikerére indul) - akkor is, amikor épp egy javítást vinnél ki. Így
+# naponta lefut, és ha piros, a GitHub e-mailben szól; a frissítő PR-t a Dependabot nyitja.
+# Helyben ugyanez: make static-vuln
+
+name: Sebezhető függőségek
+
+on:
+  schedule:
+    # Naponta, hajnalban (UTC). Csak az alapértelmezett ágon fut.
+    - cron: "23 4 * * *"
+  # Kézzel is indítható, pl. egy függőség frissítése után.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vuln:
+    name: Sebezhető függőségek
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOPRIVATE: github.com/lipcsei/*
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: false
+          persist-credentials: false
+      # Ugyanaz a kulcs és ugyanaz a mód, mint az account-service jobban: a govulncheck a modulgráfot tölti le,
+      # ahhoz pedig a privát github.com/lipcsei/commons modult SSH-n éri el.
+      - uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.COMMONS_DEPLOY_KEY }}
+      - name: A privát Go modul elérése SSH-n
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: services/account/go.mod
+          cache-dependency-path: services/account/go.sum
+      - run: make static-vuln

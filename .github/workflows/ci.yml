@@ -10,6 +10,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# A CI csak olvas: a tokenje ne tudjon a repóba írni. (A Pages-kitelepítés a saját jobjában kér
+# többet.)
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
@@ -31,11 +36,12 @@ jobs:
       # repóhoz ad jogot. A .commons submodule és a "go mod download" viszont a KÜLÖN, csak a
       # commons repóra érvényes COMMONS_DEPLOY_KEY-t igényli - ezért a submodule-checkoutot itt
       # szándékosan kikapcsoljuk, és alább, SSH-ügynökkel külön húzzuk le.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           submodules: false
+          persist-credentials: false
       - name: SSH-ügynök a commons repóhoz (submodule + go mod download)
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
         with:
           ssh-private-key: ${{ secrets.COMMONS_DEPLOY_KEY }}
       - name: A .commons submodule lehúzása SSH-n
@@ -45,7 +51,7 @@ jobs:
           git submodule update --init --recursive
       - name: "go mod download / go get is SSH-n menjen a github.com/lipcsei/*-hoz"
         run: git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: services/account/go.mod
           cache-dependency-path: services/account/go.sum
@@ -66,16 +72,19 @@ jobs:
       run:
         working-directory: landing
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: landing/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: landing-dist
           path: landing/dist
@@ -88,15 +97,50 @@ jobs:
       run:
         working-directory: admin
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
+
+  # Ugyanaz, mint helyben a `make static`: hadolint, yamllint, sqlfluff, actionlint, zizmor, go vet,
+  # golangci-lint (benne a gosec), gitleaks, semgrep, trivy. Az eszközök verzióit a static.mk
+  # rögzíti, itt nincs külön lista, ami elcsúszhatna tőle.
+  static:
+    name: Statikus elemzés
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOPRIVATE: github.com/lipcsei/*
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: false
+          persist-credentials: false
+          # A gitleaks a teljes történetet nézi: egy később eltávolított titok is titok.
+          fetch-depth: 0
+      # Ugyanaz a kulcs és ugyanaz a mód, mint az account-service jobban: a golangci-lint lefordítja a kódot,
+      # ahhoz pedig a privát github.com/lipcsei/commons modult SSH-n éri el.
+      - uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.COMMONS_DEPLOY_KEY }}
+      - name: A privát Go modul elérése SSH-n
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: services/account/go.mod
+          cache-dependency-path: services/account/go.sum
+      - run: make static
 
   # A landing oldal a snitt.video-t szolgálja ki GitHub Pagesről. Csak a main
   # ágról megy ki, és csak akkor, ha a build zöld.
@@ -113,8 +157,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: npm
@@ -133,6 +179,9 @@ jobs:
           # Opcionális hibajelentés (GlitchTip): a landing projekt DSN-je, szintén
           # repository variable. Üres/hiányzó = kikapcsolva, az SDK a csomagba sem kerül.
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN_LANDING }}
+          # Környezeti változóként, nem a szkriptbe helyettesítve: a ${{ }} a szkript SZÖVEGÉBE
+          # íródna, így a változó értéke parancsként is lefuthatna.
+          PAGES_CNAME: ${{ vars.PAGES_CNAME }}
         run: |
           # Saját domain nélkül a Pages alkönyvtárban szolgál ki
           # (<user>.github.io/<repo>/), ilyenkor az assetek útvonala is oda kell
@@ -140,9 +189,9 @@ jobs:
           # A SITE_URL-ből lesz minden abszolút URL a fejlécben (og:url,
           # og:image, canonical, sitemap) - a Facebook relatív képet nem fogad
           # el, ezért ennek pontosnak kell lennie mindkét kiszolgálási módban.
-          if [ -n "${{ vars.PAGES_CNAME }}" ]; then
+          if [ -n "$PAGES_CNAME" ]; then
             export VITE_BASE=/
-            export SITE_URL="https://${{ vars.PAGES_CNAME }}"
+            export SITE_URL="https://$PAGES_CNAME"
           else
             export VITE_BASE="/${GITHUB_REPOSITORY#*/}/"
             export SITE_URL="https://${GITHUB_REPOSITORY%%/*}.github.io"
@@ -156,17 +205,17 @@ jobs:
           # Saját domain: csak akkor írjuk ki, ha be van állítva a PAGES_CNAME
           # repository variable ÉS a DNS is mutat ide - különben a Pages a
           # *.github.io címen szolgálna ki, a CNAME viszont hibát adna.
-          if [ -n "${{ vars.PAGES_CNAME }}" ]; then
-            echo "${{ vars.PAGES_CNAME }}" > dist/CNAME
+          if [ -n "$PAGES_CNAME" ]; then
+            echo "$PAGES_CNAME" > dist/CNAME
           fi
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
         with:
           # Ha a repóban még nincs bekapcsolva a Pages, a workflow maga
           # kapcsolja be (GitHub Actions forrással) - enélkül "Get Pages site
           # failed: Not Found" hibával áll meg.
           enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: landing/dist
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -10,11 +10,14 @@ APPS := landing admin
 DOTENV ?=
 COMPOSE_ENV_FILE := $(abspath $(DOTENV))
 
+# A közös statikus elemzés (static, static-go, static-vuln ...): a commonsból másolt fájl.
+include static.mk
+
 .PHONY: help need-sso up down logs ps install dev-account dev-landing dev-admin og \
         fmt lint test build compose-check check backup restore
 
 help: ## Elérhető parancsok
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-14s %s\n", $$1, $$2}'
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-14s %s\n", $$1, $$2}'
 
 need-sso:
 	@docker network inspect sso-net >/dev/null 2>&1 || { echo "Nincs sso-net hálózat: előbb a közös Keycloakot indítsd (make -C ../sso up)." >&2; exit 1; }
@@ -60,10 +63,9 @@ og: ## A landing megosztási képeinek (og:image) újragyártása
 fmt: ## gofmt az account szolgáltatásra
 	cd services/account && gofmt -w .
 
-lint: ## gofmt-ellenőrzés, go vet, és tsc a landingre meg az adminra
+lint: static-go ## gofmt-ellenőrzés, go vet + golangci-lint, és eslint + tsc a landingre meg az adminra
 	@cd services/account && unformatted=$$(gofmt -l .) && if [ -n "$$unformatted" ]; then echo "Nem gofmt-elt fájlok (make fmt):"; echo "$$unformatted"; exit 1; fi
-	cd services/account && go vet ./...
-	for app in $(APPS); do (cd $$app && npx tsc --noEmit) || exit 1; done
+	for app in $(APPS); do (cd $$app && npm run lint && npx tsc --noEmit) || exit 1; done
 
 test: ## Az account szolgáltatás tesztjei (adatbázis és Keycloak nélkül)
 	cd services/account && go test -count=1 ./...
@@ -76,7 +78,7 @@ compose-check: ## A fejlesztői és az éles compose rendben van
 	$(COMPOSE) config -q
 	$(PROD_CONFIG) -q
 
-check: lint test build ## Amit a CI futtat
+check: lint test build static ## Nagyjából amit a CI futtat (a sebezhetőség-keresés külön: make static-vuln)
 
 ## ---- Mentés ----
 backup: ## A "snitt" Postgres-adatbázis mentése: make backup BACKUP_DIR=/mentesek/helye

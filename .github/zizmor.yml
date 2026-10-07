@@ -1,0 +1,15 @@
+# zizmor - forrás: lipcsei/commons ops/static, erre a repóra szűkítve: ez a repó publikus, privát
+# repó újrahasználható workflow-ját nem hívhatja, ezért a közös alap arra szóló engedményei
+# (címkével hívott saját workflow, secrets: inherit) itt nincsenek.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Minden action commit-SHA-ra rögzítve, a Dependabot frissíti.
+        "*": hash-pin
+  dangerous-triggers:
+    ignore:
+      # A deploy a CI sikeres lefutására indul (workflow_run), csak a main ágon. A veszély ennél
+      # a triggernél az, ha a workflow egy idegen PR kódját futtatja írási joggal - a deploy a
+      # main-t telepíti, PR-kódot nem checkoutol.
+      - deploy.yml

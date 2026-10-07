@@ -21,11 +21,18 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]): Async<T> {
   const latest = useRef(0);
 
   // A callback minden rendernél új referencia lenne, ezért a deps dönt.
+  // A ref-et effectben frissítjük, nem render közben (a render maradjon mellékhatás nélküli); ez az
+  // effect a lenti lekérdező effect ELŐTT fut, így az mindig a friss callbacket hívja.
   const run = useRef(fn);
-  run.current = fn;
+  useEffect(() => {
+    run.current = fn;
+  });
 
   useEffect(() => {
     const ticket = ++latest.current;
+    // Szándékos setState az effectben: új lekérdezés indul, a betöltés-jelzőnek és a hiba törlésének
+    // ugyanabban a körben kell megjelennie; az eredmény aszinkron érkezik.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
 

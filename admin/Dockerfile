@@ -27,6 +27,9 @@ ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
     VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
 RUN npm run build
 
+# A sima nginx kép root-ként indul (trivy DS-0002). A javítás az nginx-unprivileged kép lenne
+# (lásd landing/Dockerfile), de az a 8080-on hallgat, az éles edge proxy viszont a snitt-admin:80
+# címet hívja: a kettőt csak EGYÜTT lehet átállítani, ezért egyelőre el van engedve (.trivyignore).
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -35,4 +38,4 @@ EXPOSE 80
 # fel, az nginx viszont alapból csak IPv4-en figyel - a healthcheck így
 # "connection refused"-ot kapna egy tökéletesen működő kiszolgálótól.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+  CMD ["wget", "-qO", "/dev/null", "http://127.0.0.1/"]

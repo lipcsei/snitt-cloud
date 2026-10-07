@@ -1,0 +1,19 @@
+# gitleaks - forrás: lipcsei/commons ops/static.
+# A cél az, hogy egy ÉLES titok ne tudjon becsúszni - a szándékosan commitolt fejlesztői
+# alapértékeket viszont ne jelezze.
+[extend]
+# A beépített szabálykészletre épülünk, nem írjuk újra.
+useDefault = true
+
+[allowlist]
+description = """
+A *.example env-fájlok szándékosan tartalmaznak fejlesztői jelszavakat: ezekből készül a .env.
+Élesben a .env.prod a VPS-en él, és nem kerül a repóba.
+
+Szándékosan csak ÚTVONALAK vannak engedve, nem maguk a minták: ha egy igazi kulcs bárhová máshová
+bekerül, a gitleaks továbbra is megfogja.
+"""
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.env\.prod\.example$''',
+]

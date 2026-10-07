@@ -6,7 +6,7 @@ WORKDIR /src
 # keycloak): a "go mod download" ezt git+ssh-n éri el, a build --mount=type=ssh-je
 # (docker-compose.yml "ssh: [default]") által idehozott ügynök-socketen. A known_hosts csak a
 # build idejére él, a képbe nem kerül.
-RUN apk add --no-cache git openssh-client && mkdir -p -m 0700 /root/.ssh \
+RUN apk add --no-cache git openssh-client && mkdir -p /root/.ssh && chmod 0700 /root/.ssh \
     && ssh-keyscan -t ed25519 github.com >> /root/.ssh/known_hosts
 ENV GOPRIVATE=github.com/lipcsei/*
 RUN git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
@@ -21,5 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/account
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/account /account
 EXPOSE 8090
-USER nonroot:nonroot
+# Számmal, nem névvel: a distroless "nonroot" felhasználója a 65532, és a számot az is ellenőrizni
+# tudja (pl. Kubernetes runAsNonRoot), aki a kép /etc/passwd-jét nem látja.
+USER 65532:65532
 ENTRYPOINT ["/account"]

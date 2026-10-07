@@ -56,6 +56,9 @@ export default function AppPreview() {
   // Csökkentett mozgás esetén nincs forgatás: az első jelenet marad állóképként.
   useEffect(() => {
     if (reduced) {
+      // Szándékos setState az effectben: a rendszerbeállítás (csökkentett mozgás) menet közbeni
+      // váltására állunk vissza az első jelenetre.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIndex(0);
       setFading(false);
       return;
@@ -174,6 +177,8 @@ function useTypedQuery(query: string, reduced: boolean): string {
 
   useEffect(() => {
     if (reduced) {
+      // Szándékos setState az effectben: csökkentett mozgásnál a teljes kérdés azonnal megjelenik.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTyped(query);
       return;
     }

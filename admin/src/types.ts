@@ -151,7 +151,9 @@ export type AuditEntry = {
   at: string;
   actor_subject: string;
   actor_label: string;
-  action: AuditAction | string;
+  // A szerver később új műveletet is küldhet, ezért bármilyen szöveg elfér; a `string & {}` miatt a
+  // típus nem olvad össze sima stringgé, így az ismert értékekre megmarad a kiegészítés.
+  action: AuditAction | (string & {});
   target_type: string;
   target_id: string;
   subject: string;
