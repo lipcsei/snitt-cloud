@@ -13,15 +13,15 @@ komponenst szolgálja ki.
 
 **Keycloak SEM ide megy.** Megosztott szolgáltatás, külön repóban:
 [`lipcsei/sso`](https://github.com/lipcsei/sso) – *ugyanezen* a szerveren
-fut, de saját compose projektként, saját ütemben telepítve (nincs hozzá
-GitHub Actions workflow, kézzel települ – lásd annak README-jét).
+fut, de saját compose projektként, saját ütemben telepítve (a saját
+`Deploy VPS` workflow-jával – lásd annak README-jét).
 
 **A TLS-terminátor (Caddy) SEM ide megy.** A 80/443-as portot egy hoston
 egyszerre csak egy folyamat foghatja le, ezért egyetlen megosztott proxy
 kezeli minden app helyett: [`lipcsei/edge`](https://github.com/lipcsei/edge).
 Az köti az `auth.snitt.video`, `api.snitt.video`, `admin.snitt.video` (és a
-breath) címeit a megfelelő konténerekhez két megosztott Docker hálózaton
-keresztül (`sso-net`, `edge-net`). Ez a stack csak az `account` és `admin`
+breath, a gombamester meg a glitchtip) címeit a megfelelő konténerekhez két
+megosztott Docker hálózaton keresztül (`sso-net`, `edge-net`). Ez a stack csak az `account` és `admin`
 konténert csatlakoztatja az `edge-net`-re, egyedi aliassal.
 
 **Indítási sorrend a VPS-en: `sso` (4b) → `edge` (4c) → ez (8).** Az első
@@ -32,6 +32,13 @@ secretjei, nem a szerver.** A `deploy/.env.prod` fájlt maga a deploy workflow
 írja fel a szerverre minden kitelepítéskor a `VPS_ENV` secretből – a
 szerveren SOSEM szerkeszted kézzel; ha egy jelszót cserélnél, a GitHub
 secretet frissíted és újrafuttatod a workflow-t.
+
+**A secreteket és a változókat nem kell kézzel kattintgatni.** A
+[`lipcsei/vps`](https://github.com/lipcsei/vps) repó `github-env.sh` szkriptje
+tölti fel őket mind a hat stack (`sso`, `edge`, `snitt-cloud`, `breath`,
+`gombamester`, `glitchtip`) `<repó>-prod` environmentjébe a saját géped
+`env/<repó>.env` fájljaiból, és feltöltés előtt ellenőrzi is őket (lásd 6–7.
+pont). A lenti kézi út ugyanazt az eredményt adja.
 
 ## 0. Mire lesz szükséged előre
 
@@ -90,8 +97,10 @@ ssh -i ~/.ssh/snitt_deploy_key deploy@<szerver-ip>
 
 A **privát** kulcs (`~/.ssh/snitt_deploy_key`, kulcs eleje `-----BEGIN
 OPENSSH PRIVATE KEY-----`) tartalma kerül a `VPS_SSH_KEY` GitHub secretbe
-(lásd 7. pont) – ezután a saját gépedről törölheted, csak a GitHub Actions
-fogja használni.
+(lásd 7. pont). Ha a secreteket a `vps` repóból töltöd fel, a kulcsnak a
+saját gépeden kell maradnia: a `vps.conf` `SSH_KEY_FILE`-ja erre a fájlra
+mutat (`~/.ssh/snitt_deploy_key`), és minden `push` innen olvassa. Ha kézzel
+vetted fel a secretet, a saját gépedről törölheted.
 
 ## 3. Docker telepítése
 
@@ -115,14 +124,30 @@ A GitHub Actions workflow `/opt/snitt-cloud`-ba vár – vagy ide klónozd, vagy
 írd át az utat a `deploy.yml`-ben és ebben a leírásban egyszerre.
 
 Mivel a repo privát, deploy kulcs kell hozzá – ezt **a szerveren** generáld,
-és csak-olvasásra add hozzá a GitHubon (Settings → Deploy keys), lásd a
-korábbi üzeneteinket erről. Utána:
+és csak-olvasásra add hozzá a GitHubon (a repó Settings → Deploy keys
+oldalán). A GitHub egy deploy kulcsot csak egy repóhoz enged felvenni, ezért
+repónként saját kulcs és host-alias kell; a lenti `github.com-snitt-cloud` egy
+ilyen alias a `deploy` felhasználó `~/.ssh/config` fájljában (`HostName
+github.com`, `IdentityFile` a repó kulcsa, `IdentitiesOnly yes`). Utána:
 
 ```bash
 sudo mkdir -p /opt/snitt-cloud
 sudo chown deploy:deploy /opt/snitt-cloud
 git clone git@github.com-snitt-cloud:lipcsei/snitt-cloud.git /opt/snitt-cloud
 cd /opt/snitt-cloud
+```
+
+**Kell egy második kulcs is, a privát `commons` repóhoz.** A deploy workflow a
+szerveren a `~/.ssh/commons_deploy_key` fájlból indít egy eldobható
+SSH-ügynököt: ezzel húzza le a `.commons` submodule-t, és ezzel éri el a kép
+építése a `github.com/lipcsei/commons` Go modult (`--ssh default`). Enélkül a
+kitelepítés az `ssh-add` lépésnél megáll. Generáld a szerveren, pontosan ezen
+a néven, jelszó nélkül, és a publikus felét vedd fel csak-olvasható deploy
+kulcsként a `lipcsei/commons` repóban:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/commons_deploy_key -N "" -C "vps commons"
+cat ~/.ssh/commons_deploy_key.pub
 ```
 
 ## 4b. A megosztott Keycloak (`sso` repó) felállítása
@@ -143,21 +168,28 @@ cd /opt/sso
 cp .env.prod.example .env.prod
 # szerkeszd: POSTGRES_PASSWORD, KEYCLOAK_ADMIN_PASSWORD (mindkettő saját,
 # a snitt-cloud .env.prod-jában lévőktől ELTÉRŐ generált jelszó legyen),
-# KEYCLOAK_PUBLIC_URL=https://auth.snitt.video
+# KEYCLOAK_PUBLIC_URL=https://auth.snitt.video, és a többi app realmjének
+# címei és kliens-titkai (BREATH_*, GOMBAMESTER_*, GLITCHTIP_*) – a sablon
+# megjegyzései mindegyiket elmagyarázzák
 chmod 600 .env.prod
 
 # Az éles realm-fájlokat a fejlesztői realm-fájlokból GENERÁLJA (a dev
 # fájlokban ismert jelszavú felhasználók vannak, azok élesben nem mehetnek
-# ki) – a compose enélkül el sem indul. A címek a breath appéi (lásd annak
-# docs/DEPLOY.md-jét); akkor is meg kell adni, ha a breath még nincs kint.
-BREATH_APP_URL=https://breath.snitt.video \
-BREATH_ADMIN_URL=https://breath-admin.snitt.video \
-  ./scripts/make-prod-realms.sh
+# ki) – a compose enélkül el sem indul. A generátor a beállításait a
+# .env.prod-ból olvassa, és hibával megáll, ha egy megerősített realm
+# (breath, gombamester, glitchtip) https:// címe vagy generált kliens-titka
+# hiányzik – akkor is, ha az az app még nincs kint.
+./scripts/make-prod-realms.sh
 
 docker compose --env-file .env.prod \
   -f docker-compose.yml -f docker-compose.prod.yml \
-  up -d --build
+  up -d --build --remove-orphans
 ```
+
+Ugyanezt a `.env.prod`-ot kell az `sso-prod` environment `VPS_ENV` secretjébe
+is feltölteni (a `vps` repóban: `env/sso.env`): az `sso` saját `Deploy VPS`
+workflow-ja minden futáskor azzal **írja felül** a szerveren lévőt, majd
+újragenerálja a realmeket.
 
 Ez hozza létre az `sso-net` Docker hálózatot is, amihez az `edge` proxy és a
 snitt-cloud `account` szolgáltatása csatlakozik – ezért kell ennek a
@@ -169,8 +201,9 @@ ezek importálódnak. Lásd `docs/FIOKOK-ELESITES.md` 5. pont: az első
 indítás után töröld őket.
 
 Ha a Keycloakot később, más appok bevonása miatt (pl. új realm hozzáadása)
-frissíteni kell, ugyanígy, kézzel: `cd /opt/sso && git pull && docker
-compose --env-file .env.prod -f docker-compose.yml -f
+frissíteni kell, azt az `sso` repó `main` ágára kerülő commit után a
+`Deploy VPS` workflow elvégzi. Kézzel csak végszükségben: `cd /opt/sso &&
+git pull && docker compose --env-file .env.prod -f docker-compose.yml -f
 docker-compose.prod.yml up -d --build`.
 
 ## 4c. A megosztott proxy (`edge` repó) felállítása
@@ -187,20 +220,30 @@ git clone git@github.com:lipcsei/edge.git /opt/edge
 cd /opt/edge
 
 cp .env.prod.example .env.prod
-# szerkeszd: ACME_EMAIL, és a PUBLIC_*_URL címek (a DNS-t ELŐBB állítsd be,
-# lásd 5. pont – enélkül a Let's Encrypt tanúsítványkérés elbukik)
+# szerkeszd: ACME_EMAIL, a PUBLIC_*_URL címek és a *_REDIRECT_FROM listák (a
+# DNS-t ELŐBB állítsd be, lásd 5. pont – enélkül a Let's Encrypt
+# tanúsítványkérés elbukik). MINDEN változó kötelező, a többi appé is: ha egy
+# hiányzik, a compose el sem indul.
 chmod 600 .env.prod
+
+# A telepítők mappája (api.snitt.video/downloads): léteznie kell az első
+# indítás ELŐTT, különben a Docker üres, root tulajdonú mappaként hozza létre.
+# Az egyszeri beállítása a snitt repó docs/KIADAS.md-jében van.
+ls -ld /srv/snitt-downloads
 
 docker compose --env-file .env.prod up -d
 ```
 
 Ez hozza létre az `edge-net` hálózatot. A proxy akkor is elindul, ha az appok
-még nem futnak – a címük addig `502`-t ad.
+még nem futnak – a címük addig `502`-t ad. Ezt a `.env.prod`-ot is a `VPS_ENV`
+secret írja felül minden kitelepítéskor (`edge-prod` environment, a `vps`
+repóban `env/edge.env`).
 
 **Ha a szerveren korábban a snitt-cloud saját Caddyje futott**, az még foglalja
 a 80/443-at: az átállás lépéseit (rövid kiesés) az
 [`edge` README-je](https://github.com/lipcsei/edge#migrating-from-a-per-app-caddy-snitt-cloud-used-to-run-its-own)
-írja le.
+írja le. Ez már csak történeti: ebben a repóban nincs saját Caddy, új
+szerveren ezzel nincs teendő.
 
 ## 5. DNS
 
@@ -210,11 +253,23 @@ enélkül a 8. pontban a Let's Encrypt tanúsítványkérés elbukik.
 
 ## 6. `.env.prod` tartalmának előkészítése (a SAJÁT gépeden, nem a szerveren)
 
+**A `vps` repóval (ajánlott):** a `../vps` mappában a `./github-env.sh init
+snitt-cloud` létrehozza az `env/snitt-cloud.env` fájlt a
+`deploy/.env.prod.example`-ből. Azt töltsd ki az alábbiak szerint; az a fájl
+marad a titkok egyetlen olvasható példánya (git-ignore-olt, legyen róla
+mentés). A `./github-env.sh check snitt-cloud` hálózat nélkül ellenőrzi:
+megvan-e és ki van-e töltve minden kulcs, nem maradt-e bent `CSERÉLD-LE`
+helykitöltő, és a több repóban is szereplő értékek (pl. a
+`PUBLIC_KEYCLOAK_URL`, `PUBLIC_API_URL`, `PUBLIC_ADMIN_URL`) egyeznek-e az
+`sso` és az `edge` env-fájljával.
+
+**Kézzel:**
+
 ```bash
 cp deploy/.env.prod.example /tmp/env.prod.draft
 ```
 
-Töltsd ki `/tmp/env.prod.draft`-ot:
+Töltsd ki `/tmp/env.prod.draft`-ot (vagy az `env/snitt-cloud.env`-et):
 - `POSTGRES_PASSWORD` – generáld: `openssl rand -base64 24` (ez a snitt-cloud
   SAJÁT Postgresének jelszava – a 4b. pontban az `sso` repóhoz külön,
   MÁSIK generált jelszót adtál a Keycloak adatbázisának)
@@ -227,9 +282,16 @@ tartalmát a következő pontban egy GitHub secretbe másolod, utána törölhet
 
 ## 7. GitHub secretek és változók
 
-A repo Settings → Environments → **`snitt-cloud-prod`** environment alatt hozd
-létre (a workflow ezt az environmentet nevezi meg; repository szintű secretet
-nem használ):
+**A `vps` repóval:** `./github-env.sh push snitt-cloud` (előtte `push
+--dry-run` megmutatja, mit tenne). Létrehozza az environmentet, beállítja a
+`VPS_HOST` / `VPS_USER` változót a `vps.conf`-ból, a `VPS_SSH_KEY` secretet a
+`vps.conf` `SSH_KEY_FILE`-jából és a `VPS_ENV` secretet az
+`env/snitt-cloud.env` teljes tartalmából. A `push --deploy snitt-cloud` utána
+a `Deploy VPS` workflow-t is elindítja (ez a 8. pont).
+
+**Kézzel:** a repo Settings → Environments → **`snitt-cloud-prod`** environment
+alatt hozd létre (a deploy workflow ezt az environmentet nevezi meg;
+repository szintű secretet nem használ):
 
 | Hova | Név | Érték |
 |---|---|---|
@@ -241,27 +303,47 @@ nem használ):
 
 A `VPS_SSH_KEY` és a `VPS_ENV` kerüljön az *Environment secrets* alá: a változót (*Environment variables*) a GitHub sima szövegként tárolja, és a futási naplóban sem takarja ki. Ha a workflow ezt a kettőt változóként találja, hibával leáll.
 
+A **CI**-nak (nem a kitelepítésnek) külön, repository szintű beállítások kellenek; ezeket a `vps`
+repó nem kezeli:
+
+| Hova | Név | Mire |
+|---|---|---|
+| Actions secret | `COMMONS_DEPLOY_KEY` | Csak-olvasható deploy kulcs (privát fele) a `lipcsei/commons` repóhoz: a CI ezzel húzza le a `.commons` submodule-t és a privát Go modult. Enélkül az `account-service` és a `static` job (és a napi sebezhetőség-keresés) elbukik, és zöld CI híján a kitelepítés sem indul. |
+| Dependabot secret | `COMMONS_READ_TOKEN` | Csak a `commons` repót olvasó token, hogy a Dependabot Go-frissítései ne akadjanak el (`.github/dependabot.yml`). |
+| Actions variable | `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID` | A landing GitHub Pages buildjének Keycloak-beállításai. Üresen a landing fiókok nélkül épül. |
+| Actions variable | `PAGES_CNAME` | A landing saját domainje (`snitt.video`); üresen a `*.github.io` alkönyvtárba épül. |
+| Actions variable | `DOWNLOAD_BASE_URL`, `SENTRY_DSN_LANDING` | Opcionális: a telepítők helye, illetve a landing hibajelentése. |
+
 ## 8. Első kitelepítés
 
-Ellenőrizd, hogy a 4b. pont `sso` stackje már fut (`docker compose -f
-/opt/sso/docker-compose.yml -f /opt/sso/docker-compose.prod.yml ps` –
-`keycloak` legyen `Up`), utána:
+Ellenőrizd, hogy a 4b. pont `sso` stackje már fut (`cd /opt/sso && docker
+compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml
+ps` – `keycloak` legyen `Up`; az `--env-file` nélkül a compose a kötelező
+jelszavak híján nem renderel), és a 4c. pont `edge` stackje is (az hozza létre
+az `edge-net` hálózatot), utána:
 
 GitHub → repo → **Actions → Deploy VPS → Run workflow** (a `workflow_dispatch`
-kézi indítás pont erre való – build nélkül, csak a meglévő kódot viszi ki).
-Ez felírja a szerverre a `deploy/.env.prod`-ot a secretből, és elindítja a
-snitt-cloud stacket (`postgres`, `account`, `admin`).
+kézi indítás pont erre való – nem vár CI-futásra, a `main` ág meglévő kódját
+viszi ki). Ez felírja a szerverre a `deploy/.env.prod`-ot a secretből,
+`git reset --hard origin/main`-nel frissíti a klónt, lehúzza a `.commons`
+submodule-t, majd a szerveren megépíti és elindítja a snitt-cloud stacket
+(`postgres`, `account`, `admin`).
 
 Kövesd a futást az Actions fülön; ha piros lesz, a log megmondja, melyik
-lépésnél (SCP feltöltés vagy SSH-s `docker compose`) akadt el.
+lépésnél (a beállítások ellenőrzése, SCP feltöltés vagy SSH-s `docker
+compose`) akadt el. Ha egy secret hiányzik, az első lépés név szerint megmondja,
+melyik. (Ez a workflow – a közös `lipcsei/workflows` változattal szemben – nem
+várja meg, hogy a konténerek healthy állapotba kerüljenek: a zöld futás csak
+annyit jelent, hogy a `docker compose up` lefutott.)
 
 Ellenőrzés a szerveren:
 
 ```bash
 cd /opt/snitt-cloud
 docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml ps
-# a proxy naplója (tanúsítványkérés, 502-k) az edge stackben van:
-docker compose -f /opt/edge/docker-compose.yml logs -f caddy
+# a proxy naplója (tanúsítványkérés, 502-k) az edge stackben van; az
+# --env-file kell, mert ott minden változó kötelező:
+(cd /opt/edge && docker compose --env-file .env.prod logs -f caddy)
 ```
 
 A Let's Encrypt tanúsítványokat az `edge` proxy kéri (4c. pont) – ez néhány
@@ -279,9 +361,11 @@ Kövesd végig [`docs/FIOKOK-ELESITES.md`](FIOKOK-ELESITES.md)-t: SMTP, e-mail
 igazolás, a Keycloak kliensek valódi redirect URI-jai, a fejlesztői
 `snittadmin`/`demo` fiókok törlése, a bootstrap admin jelszó cseréje.
 
-Emellett most, hogy a realm létrejött, a szerveren (SSH-val) – ez most az
-`sso` repóból fut, a saját (4b. pontban beállított) `.env.prod`-jában lévő
-jelszóval:
+A `manage-users` szerep (a fiók letiltásához kell) a mostani
+`snitt-realm.json`-ban már benne van, tehát **friss** telepítésnél az import
+megadja. Ha a realm még a szerep bevezetése előtt jött létre, pótolni kell a
+szerveren (SSH-val) – ez az `sso` repóból fut, a saját (4b. pontban
+beállított) `.env.prod`-jában lévő jelszóval:
 
 ```bash
 cd /opt/sso
@@ -306,14 +390,21 @@ sudo crontab -u deploy -e
 ```
 
 ```
-0 3 * * * /opt/snitt-cloud/deploy/scripts/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
-0 3 * * * /opt/sso/scripts/backup.sh /var/backups/sso >> /var/log/sso-backup.log 2>&1
+0 3 * * * cd /opt/snitt-cloud && PROJECT_NAME=snitt DB_ENGINE=postgres DB_SERVICE=postgres DB_NAME=snitt DB_USER=snitt COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_ENV_FILE=/opt/snitt-cloud/deploy/.env.prod ./.commons/ops/backup.sh /var/backups/snitt >> /var/log/snitt-backup.log 2>&1
+0 3 * * * COMPOSE_ENV_FILE=/opt/sso/.env.prod /opt/sso/scripts/backup.sh /var/backups/sso >> /var/log/sso-backup.log 2>&1
 ```
 
+A mentő szkript a `.commons` submodule-ban van, tehát a szerveren előbb `git submodule update --init`
+kell. A hosszú sor ugyanaz, amit helyben a `make backup DOTENV=deploy/.env.prod BACKUP_DIR=…` futtat;
+a szerveren nincs `make`. A `COMPOSE_ENV_FILE` nélkül a compose jelszavak híján nem renderel, és nem
+készül mentés.
+
 Próbáld ki mindkettőt egyszer kézzel is – lásd
-[`deploy/scripts/backup.sh`](../deploy/scripts/backup.sh) és az `sso` repó
+a `commons` repó `ops/backup.sh` és az `sso` repó
 `scripts/backup.sh` fejlécét: egy soha ki nem próbált mentés nem mentés,
-csak remény.
+csak remény. A visszaállítás párja a `.commons/ops/restore.sh` (helyben
+`make restore FILE=…`), ugyanazokkal a változókkal és `STOP_SERVICES=account`
+beállítással; **felülírja** az adatbázist.
 
 ## 11. Hibajelentés a GlitchTipbe (opcionális)
 
@@ -354,10 +445,12 @@ A DSN a GlitchTip projekt *Client Keys (DSN)* oldalán van (a projekteket a `gli
   utólag nem olvashatók vissza a felületen) – érdemes egy jelszókezelőbe is
   bemásolni, mielőtt letörlöd a saját géped `/tmp/env.prod.draft` fájlját.
 - Ha a `deploy/docker-compose.prod.yml` service-neveit vagy a domainek
-  számát bővíted, az `edge` repó `Caddyfile`-ját (és a `docker-compose.yml`-jét)
-  és a `deploy.yml` `up -d --build` sorát is bővíteni kell – ezek szándékosan
+  számát bővíted, az `edge` repó `Caddyfile`-ját (és a `docker-compose.yml`-jét,
+  `.env.prod.example`-jét) és a `deploy.yml` `up -d --build` sorát is bővíteni kell – ezek szándékosan
   nem generálódnak automatikusan.
 - Az `sso` és az `edge` repónak is saját `Deploy VPS` workflow-ja van
   (`sso-prod`, illetve `edge-prod` environment, mindegyikben a saját
   `VPS_*` secretek – a GitHub nem oszt meg secretet repók között). Amíg a
-  secretek nincsenek beállítva, az automatikus futás zölden kimarad.
+  secretek nincsenek beállítva, azoknál az automatikus futás zölden kimarad.
+  Ennek a repónak a `Deploy VPS` workflow-ja szigorúbb: hiányzó secretnél az
+  automatikus futás is **hibával** áll meg.

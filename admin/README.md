@@ -10,25 +10,28 @@ desktop app fiók nélkül, teljesen önállóan működik – lásd
 
 ## Futtatás
 
-Kell hozzá a futó fejlesztői stack: a megosztott Keycloak
-([`sso`](https://github.com/lipcsei/sso) repó, `docker compose up -d` –
-ezt indítsd ELŐSZÖR), majd ennek a repónak a Postgres + account
-szolgáltatása. A repo gyökeréből:
+Kell hozzá a futó fejlesztői stack. A Keycloak **nem** ennek a repónak a része: a megosztott
+[`sso`](https://github.com/lipcsei/sso) repóban fut (`http://localhost:8081`), és azt kell ELŐSZÖR
+elindítani, mert ő hozza létre az `sso-net` hálózatot. A repo gyökeréből:
 
 ```bash
-docker compose -f deploy/docker-compose.yml up --build
+make -C ../sso up     # a közös Keycloak
+make up               # Postgres + account + admin + landing
 ```
 
-Majd külön terminálban:
+Ezzel az admin már fut is konténerben, a valódi production builddel: <http://localhost:5175>.
+
+Fejlesztéshez, gyors újratöltéssel (a Vite ugyanazt az 5175-ös portot kéri, ezért a `make dev-admin`
+előbb leállítja a compose admin konténerét):
 
 ```bash
-cd admin
-cp .env.example .env      # majd szerkeszd, ha kell
-npm install
-npm run dev               # http://localhost:5175
+cp admin/.env.example admin/.env   # csak ha az alapértelmezéseken változtatnál
+make install                       # npm ci a landingre és az adminra
+make dev-admin                     # http://localhost:5175
 ```
 
-A stackben előre be van importálva egy admin fiók:
+A `snitt` realm importjával (az `sso` repó `realms/snitt-realm.json` fájlja) előre létrejön egy admin
+fiók:
 
 | Felhasználó | Jelszó | Szerep |
 | --- | --- | --- |
@@ -44,9 +47,13 @@ A `demo` / `demo12345678` fiókkal is be lehet lépni, de az nem admin: ilyenkor
 ### Ellenőrzések
 
 ```bash
+npm run lint
 npx tsc --noEmit
 npm run build
 ```
+
+Ugyanezt futtatja a CI `admin` jobja; a repo gyökeréből a `make lint` és a `make build` a landinggel és
+az account szolgáltatással együtt.
 
 ## Környezeti változók
 
@@ -132,17 +139,17 @@ történik” magyarázó szövegek tűnnek el).
 
 ## Üzemeltetés (Docker, VPS)
 
-Az admin felület statikus SPA, amit nginx szolgál ki - fejlesztés közben a
-compose stackben fut (`http://localhost:5175`), élesben ugyanez a kép megy a
-VPS-re:
-
-```bash
-docker compose -f deploy/docker-compose.yml up -d --build admin
-```
+Az admin felület statikus SPA, amit nginx szolgál ki (a konténerben a 80-as porton, nem rootként) -
+fejlesztés közben a compose stackben fut (`make up`, `http://localhost:5175`), élesben ugyanez a
+Dockerfile épül a VPS-en. Oda nem kézzel megy: a `Deploy VPS` workflow
+(`.github/workflows/deploy.yml`) a zöld `main`-ági CI után a `deploy/docker-compose.yml` és a
+`deploy/docker-compose.prod.yml` együttesével építi és indítja a `postgres`, `account` és `admin`
+szolgáltatást. Az első felállítás lépései: [`docs/VPS-TELEPITES.md`](../docs/VPS-TELEPITES.md).
 
 **Fontos**: a Vite a `VITE_*` értékeket **fordításkor** helyettesíti be, tehát
 ezek nem állíthatók a konténer indításakor - más környezethez újra kell
-építeni a képet:
+építeni a képet. A compose a `deploy/.env.prod` értékeiből adja őket (`PUBLIC_KEYCLOAK_URL`,
+`KEYCLOAK_REALM`, `ADMIN_CLIENT_ID`, `PUBLIC_API_URL`, `SENTRY_DSN_ADMIN`); kézzel ugyanez:
 
 ```bash
 docker build -t snitt-admin:latest \
@@ -153,10 +160,11 @@ docker build -t snitt-admin:latest \
   ./admin
 ```
 
-A VPS-en érdemes még:
+A VPS-en:
 
-- **HTTPS-t tenni elé** (Caddy/Traefik/nginx reverse proxy) - a Keycloak
-  bejelentkezés éles környezetben HTTPS-t vár,
+- **a HTTPS-t a megosztott [`edge`](https://github.com/lipcsei/edge) proxy adja**: az éles compose
+  az admin konténert az `edge-net` hálózatra köti `snitt-admin` néven, a hosztporton pedig csak a
+  `127.0.0.1:5175`-re. Saját proxyt nem kell elé tenni,
 - a Keycloak `snitt-admin` kliensénél a valódi domainre állítani a
   `redirectUris` és `webOrigins` mezőket,
 - **hozzáférést korlátozni** (IP-szűrés vagy VPN): ez belső eszköz, amiben
@@ -166,9 +174,12 @@ A VPS-en érdemes még:
 ## Felépítés
 
 ```
+src/App.tsx             útvonalak, a „Nincs jogosultságod” képernyő
 src/auth.ts             Keycloak konfiguráció, szerep-olvasás a tokenből
 src/AuthProvider.tsx    bejelentkezés, token-frissítés, jogosultsági állapot
 src/api.ts              tipizált admin API kliens, ApiError a szerver üzenetével
+src/types.ts            az admin API válaszainak típusai
+src/sentry.tsx          opcionális hibajelentés (csak beállított VITE_SENTRY_DSN mellett)
 src/hooks.ts            useAsync / useDebounced / usePlans
 src/format.ts           pénz-, dátum- és státuszformázás (hu-HU)
 src/components/         elrendezés, tábla-kiegészítők, modálisok, műveletek (useAction)
