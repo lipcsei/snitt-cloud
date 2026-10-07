@@ -13,3 +13,6 @@ deploy/.env.prod.upload
 # IDE / OS
 .idea/
 .DS_Store
+
+# Lefedettségi riportok
+coverage/
