@@ -18,6 +18,8 @@ jobs:
   account-service:
     name: Account service (Go)
     runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.pct }}
     defaults:
       run:
         working-directory: services/account
@@ -29,7 +31,13 @@ jobs:
           cache-dependency-path: services/account/go.sum
       - run: go build ./...
       - run: go vet ./...
-      - run: go test -count=1 ./...
+      - run: go test -count=1 -coverpkg=./... -coverprofile="$RUNNER_TEMP/coverage.out" ./...
+      - name: Lefedettség
+        id: coverage
+        run: |
+          pct="$("$GITHUB_WORKSPACE/.github/badges/gocover.sh" "$RUNNER_TEMP/coverage.out")"
+          echo "pct=$pct" >> "$GITHUB_OUTPUT"
+          echo "Go lefedettség: **$pct%**" >> "$GITHUB_STEP_SUMMARY"
       - name: gofmt ellenőrzés
         run: |
           unformatted=$(gofmt -l .)
@@ -148,3 +156,28 @@ jobs:
           path: landing/dist
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # A lefedettség-badge-ek a `badges` ágra kerülnek, a README onnan hivatkozza őket (a szkriptek a
+  # commons ops/badges másolatai). Csak a main-ági pushnál fut, és ez az egyetlen job, amelyik
+  # írhat a repóba. continue-on-error: egy elakadt badge-frissítés ne tegye pirossá a CI-t.
+  badges:
+    name: Badge-ek
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [account-service]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: SVG-k generálása és kitolása a badges ágra
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GO_COVERAGE: ${{ needs.account-service.outputs.coverage }}
+        run: |
+          out="$RUNNER_TEMP/badges" && mkdir -p "$out"
+          .github/badges/badge.sh "Go lefedettség" "${GO_COVERAGE:+$GO_COVERAGE%}" > "$out/coverage-go.svg"
+          .github/badges/publish.sh "$out"
