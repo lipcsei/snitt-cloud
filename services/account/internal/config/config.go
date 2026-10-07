@@ -72,7 +72,40 @@ func Load() (Config, error) {
 	if len(c.DefaultCurrency) != 3 {
 		return Config{}, fmt.Errorf("DEFAULT_CURRENCY három betűs ISO kód kell legyen")
 	}
+	if c.SentryEnvironment == "production" {
+		if err := c.checkProduction(); err != nil {
+			return Config{}, err
+		}
+	}
 	return c, nil
+}
+
+// A fejlesztői alapértékek ebben a PUBLIKUS repóban bárki számára olvashatók.
+const (
+	devAdminClientSecret = "snitt-admin-api-dev-secret"
+	devDatabaseUserinfo  = "snitt:snitt@"
+)
+
+// checkProduction megakadályozza, hogy az éles szolgáltatás egy kimaradt
+// környezeti változó miatt csendben a fejlesztői alapértékkel induljon el. A
+// service account manage-users joggal bír, a titka tehát a realm összes
+// felhasználójához hozzáférést ad.
+func (c Config) checkProduction() error {
+	if c.AdminClientSecret == devAdminClientSecret || len(c.AdminClientSecret) < 32 {
+		return fmt.Errorf("KEYCLOAK_ADMIN_CLIENT_SECRET élesben legalább 32 karakteres, generált titok kell legyen, nem a fejlesztői érték")
+	}
+	if strings.Contains(c.DatabaseURL, devDatabaseUserinfo) {
+		return fmt.Errorf("DATABASE_URL élesben nem használhatja a fejlesztői adatbázis-jelszót")
+	}
+	if !strings.HasPrefix(c.KeycloakIssuer, "https://") {
+		return fmt.Errorf("KEYCLOAK_ISSUER élesben https:// cím kell legyen")
+	}
+	for _, o := range c.CORSOrigins {
+		if !strings.HasPrefix(o, "https://") {
+			return fmt.Errorf("CORS_ORIGINS élesben csak https:// eredeteket tartalmazhat (kapott: %q)", o)
+		}
+	}
+	return nil
 }
 
 func env(key, def string) string {

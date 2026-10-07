@@ -39,10 +39,23 @@ services:
     # exec"-kel megy. A 127.0.0.1:5432 ráadásul ütközne az sso Postgresével,
     # ami ugyanezen a gépen fut.
     ports: !reset []
+    # Újraindulás vagy OOM után magától jöjjön vissza.
+    restart: unless-stopped
+    environment:
+      # Élesben nincs alapérték: a fejlesztői jelszó ebben a publikus repóban
+      # olvasható, kimaradt változóval ne induljon el a stack.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?állítsd be a POSTGRES_PASSWORD-öt a deploy/.env.prod-ban}
 
   account:
+    restart: unless-stopped
     environment:
       SENTRY_ENVIRONMENT: production
+      # Ugyanezért kötelező: a fejlesztői titok nyilvános, a service account
+      # pedig a realm összes felhasználóját kezelheti. Az sso repó
+      # SNITT_ADMIN_API_SECRET-jével kell egyeznie. (A szolgáltatás maga is
+      # megtagadja az indulást a fejlesztői értékkel, lásd internal/config.)
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:?állítsd be a KEYCLOAK_ADMIN_CLIENT_SECRET-et a deploy/.env.prod-ban}
+      DATABASE_URL: postgres://${POSTGRES_USER:-snitt}:${POSTGRES_PASSWORD:?állítsd be a POSTGRES_PASSWORD-öt a deploy/.env.prod-ban}@postgres:5432/${POSTGRES_DB:-snitt}?sslmode=disable
     ports: !override
       - "127.0.0.1:8090:8090"
     networks:
