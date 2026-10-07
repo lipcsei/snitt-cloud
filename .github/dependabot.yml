@@ -1,8 +1,23 @@
 # A `make static-vuln` (trivy, govulncheck) MEGMONDJA, ha egy függőségben sebezhetőség van, de nem
 # emeli a verziót. A Dependabot PR-t nyit rá, amire lefut a teljes CI, tehát látszik, tör-e valamit.
 version: 2
+
+# A Go modulok a PRIVÁT github.com/lipcsei/commons-t húzzák: a Dependabot a saját tokenjével nem éri
+# el, így a gomod-frissítések e nélkül elakadnak. A COMMONS_READ_TOKEN egy csak a commons repót
+# OLVASÓ (fine-grained, Contents: read) token, a repó DEPENDABOT-titkai között - nem az Actions-
+# titkok között, azokat a Dependabot nem látja:
+#   gh secret set COMMONS_READ_TOKEN --app dependabot
+registries:
+  commons:
+    type: git
+    url: https://github.com
+    username: x-access-token
+    password: ${{secrets.COMMONS_READ_TOKEN}}
+
 updates:
   - package-ecosystem: gomod
+    registries:
+      - commons
     directory: /services/account
     schedule:
       interval: weekly
