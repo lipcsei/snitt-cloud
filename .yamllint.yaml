@@ -1,0 +1,17 @@
+# yamllint - forrás: lipcsei/commons ops/static. Repónként szabadon szigorítható vagy lazítható.
+extends: default
+
+rules:
+  # A "---" kezdősor a compose- és workflow-fájlokban csak zaj.
+  document-start: disable
+  # A hosszú sor leggyakrabban egy parancs vagy URL, amit tördelni rosszabb, mint hagyni.
+  line-length:
+    max: 160
+  # A GitHub Actions `on:` kulcsát a YAML 1.1 igaz értéknek olvassa; az értékeknél marad a szabály.
+  truthy:
+    check-keys: false
+  # Az openapi.yaml-ok a tömör `{ type: string }` alakot használják.
+  braces:
+    max-spaces-inside: 1
+  comments:
+    min-spaces-from-content: 1

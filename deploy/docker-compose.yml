@@ -123,7 +123,8 @@ services:
         VITE_SENTRY_DSN: ${SENTRY_DSN_LANDING:-}
         VITE_SENTRY_ENVIRONMENT: development
     ports:
-      - "8088:80"
+      # A konténerben 8080: az nginx-unprivileged kép nem root, a 80-at nem kötheti.
+      - "8088:8080"
     restart: unless-stopped
 
 networks:

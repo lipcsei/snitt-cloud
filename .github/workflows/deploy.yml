@@ -28,6 +28,9 @@ on:
   # a VPS_ENV secret frissítése után kell újraküldeni build nélkül.
   workflow_dispatch:
 
+# A kitelepítés SSH-n megy a VPS-re, a GitHub-tokenre semmihez nincs szükség.
+permissions: {}
+
 # Két deploy soha ne fusson egyszerre (ugyanazokért a konténerekért
 # versenyeznének).
 concurrency:
@@ -52,6 +55,8 @@ jobs:
       # Ha egy secret hiányzik vagy üres, itt álljon meg, és NÉV SZERINT mondja
       # meg, melyik az (az értéküket soha nem írja ki). Enélkül az scp csak
       # annyit mond, hogy "missing server host".
+      # yamllint disable rule:line-length
+      # (A két ::error:: üzenet egy-egy hosszú sor: tördelve a GitHub több, csonka hibaként mutatná.)
       - name: Beállítások ellenőrzése
         env:
           VPS_HOST: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
@@ -74,6 +79,8 @@ jobs:
             exit 1
           fi
 
+      # yamllint enable rule:line-length
+
       # Fájlba írjuk a runneren, hogy utána scp-vel egyben át tudjuk vinni -
       # "printf '%s'" (nem echo), hogy a fájl tartalma karakterre pontosan a
       # secret értéke legyen, sortörés-értelmezés vagy escape-elés nélkül.
@@ -83,7 +90,7 @@ jobs:
         run: printf '%s' "$ENV_PROD" > .env.prod.upload
 
       - name: .env.prod feltöltése a szerverre
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634 # v0.1.7
         with:
           host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
           username: ${{ vars.VPS_USER || secrets.VPS_USER }}
@@ -93,7 +100,7 @@ jobs:
           target: "/opt/snitt-cloud/deploy/"
 
       - name: Kitelepítés
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
           host: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
           username: ${{ vars.VPS_USER || secrets.VPS_USER }}

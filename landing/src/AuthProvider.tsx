@@ -70,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Keycloak nélküli build (a fiókok még nincsenek élesben): meg sem
     // próbáljuk - az adapter üres realmmel a saját domainünkre lőne.
     if (!authConfigured) {
+      // Szándékos setState az effectben: a "kész" állapot így ugyanabban a pillanatban áll be, mint
+      // a Keycloakos ágon (az első render után) - az első kirajzolás a két buildben azonos marad.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
       return;
     }

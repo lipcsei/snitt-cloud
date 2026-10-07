@@ -121,11 +121,11 @@ func splitAudiences(audience string) []string {
 func (v *OIDCVerifier) Verify(ctx context.Context, rawToken string) (Identity, error) {
 	tok, err := v.verifier.Verify(ctx, rawToken)
 	if err != nil {
-		return Identity{}, fmt.Errorf("%w: %v", ErrUnauthenticated, err)
+		return Identity{}, fmt.Errorf("%w: %w", ErrUnauthenticated, err)
 	}
 	var id Identity
 	if err := tok.Claims(&id); err != nil {
-		return Identity{}, fmt.Errorf("%w: claimek kiolvasása: %v", ErrUnauthenticated, err)
+		return Identity{}, fmt.Errorf("%w: claimek kiolvasása: %w", ErrUnauthenticated, err)
 	}
 	if id.Subject == "" {
 		// A go-oidc a Subject claimet külön is kiadja, de a struct-tag alapú

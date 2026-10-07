@@ -84,7 +84,7 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
     <div className="code-block">
       <div className="code-head">
         <span className="code-label">{label ?? t.install.codeLabel}</span>
-        <button type="button" className="code-copy" onClick={copy}>
+        <button type="button" className="code-copy" onClick={() => void copy()}>
           {state === 'ok' ? t.install.copied : state === 'err' ? t.install.copyFailed : t.install.copy}
         </button>
       </div>

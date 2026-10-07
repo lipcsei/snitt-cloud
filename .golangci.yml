@@ -1,0 +1,51 @@
+# golangci-lint - forrás: lipcsei/commons ops/static (a breath-ben kiérlelt készlet).
+#
+# A linter-készlet kurált, nem "minden": csak olyanok vannak benne, amik VALÓDI hibát tudnak
+# fogni. Szándékosan kimaradtak a formázók (gofmt/gofumpt), a stílus-számlálók (lll, funlen,
+# gocognit, nestif) és a whitespace-szabályok (wsl, godot): zajjal járnak és semmit nem előznek meg.
+# A misspell is: angol szótárral a magyar kommenteket jelzi (tehát -> "teh", adni -> "adn").
+#
+# A gosec ITT fut, külön programként nem: önállóan ugyanazt jelzi, de más elnyomás-szintaxist kér
+# (//#nosec a //nolint:gosec helyett), azaz két helyen kellene ugyanazt az indoklást vezetni.
+#
+# A generált kódot (a "Code generated ... DO NOT EDIT" fejlécű fájlokat) a golangci-lint magától
+# kihagyja.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - bodyclose       # el nem engedett HTTP response body
+    - contextcheck    # nem örökölt context
+    - errcheck        # elhagyott hiba-visszatérés
+    - errorlint       # %v helyett %w, hibák összehasonlítása
+    - exhaustive      # hiányos switch enumon
+    - gosec           # biztonsági minták, köztük a G115 túlcsordulás
+    - govet
+    - ineffassign
+    - nilerr          # nil-t ad vissza, miközben a hiba nem nil
+    - noctx           # context nélküli HTTP/DB hívás
+    - rowserrcheck    # rows.Err() elhagyva
+    - sqlclosecheck   # el nem zárt sql.Rows / Stmt
+    - staticcheck
+    - unparam         # soha nem használt paraméter vagy visszatérési érték
+    - unused
+    - usestdlibvars   # "GET" helyett http.MethodGet
+    - wastedassign
+
+  settings:
+    exhaustive:
+      # A generált enumokra a default-ág nem elég indok: egy új érték felvételekor látni akarjuk,
+      # hol kell kezelni.
+      default-signifies-exhaustive: false
+
+  exclusions:
+    presets:
+      # A `defer f.Close()` és társai (Flush, os.Remove...) el nem kapott hibája: nincs mit tenni vele.
+      - std-error-handling
+    rules:
+      # A tesztekben a httptest.NewRequest a szokásos alak, a segédfüggvények szándékosan adnak
+      # vissza nyitott választ vagy kapnak mindig ugyanolyan paramétert, a tesztadat pedig nem titok
+      # és nem támadási felület: ezek a linterek itt semmit nem védenek meg.
+      - path: _test\.go$
+        linters: [noctx, bodyclose, unparam, gosec]

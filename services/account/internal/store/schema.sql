@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS invoices (
     CONSTRAINT invoices_amount_chk CHECK (amount_minor >= 0),
     -- A kifizetés dátuma és a státusz nem térhet el egymástól.
     CONSTRAINT invoices_paid_at_chk
-        CHECK ((status = 'paid') = (paid_at IS NOT NULL))
+        -- (sqlfluff: a már élesben lefutott sémát a kis-/nagybetűk egységesítéséért nem írjuk át.)
+        CHECK ((status = 'paid') = (paid_at IS NOT NULL)) -- noqa: CP04
 );
 
 CREATE INDEX IF NOT EXISTS invoices_subject_idx ON invoices (subject);
@@ -117,7 +118,7 @@ CREATE TABLE IF NOT EXISTS admin_audit (
     -- Az érintett felhasználó, ha a művelethez tartozik ilyen.
     subject       TEXT NOT NULL DEFAULT '',
     summary       TEXT NOT NULL DEFAULT '',
-    detail        JSONB NOT NULL DEFAULT '{}'::jsonb,
+    detail        JSONB NOT NULL DEFAULT '{}'::jsonb, -- noqa: CP05
     CONSTRAINT admin_audit_action_chk CHECK (action <> '')
 );
 

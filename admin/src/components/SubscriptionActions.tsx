@@ -338,7 +338,11 @@ export function ReactivateDialog({
   onClose: () => void;
   onDone: Done;
 }) {
-  const expired = new Date(subscription.current_period_end).getTime() <= Date.now();
+  // A párbeszédablak megnyitásakor dől el, egyszer: a Date.now() render közben hívva renderenként
+  // mást adhatna, és a lenti kezdőérték (newPeriod) is ehhez a pillanathoz tartozik.
+  const [expired] = useState(
+    () => new Date(subscription.current_period_end).getTime() <= Date.now(),
+  );
   const [newPeriod, setNewPeriod] = useState(expired);
   const [periodDays, setPeriodDays] = useState('30');
   const { busy, error, run } = useAction(onDone, onClose);

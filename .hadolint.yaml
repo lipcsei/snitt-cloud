@@ -1,0 +1,12 @@
+# hadolint - forrás: lipcsei/commons ops/static.
+# Amit szándékosan nem tartunk be, indoklással - nem a linter van kikapcsolva, hanem ezek a
+# konkrét szabályok, ezekkel az okokkal.
+ignored:
+  # DL3018: "pin versions in apk add". Az alpine-csomagok verziói kirotálnak a repóból, így a
+  # pinelés rendszeresen eltörné a buildet - a reprodukálhatóságot a base image tagje adja.
+  - DL3018
+  # DL3064: "potentially sensitive data in ARG/ENV". A jelzett sor az
+  # ENV GOPRIVATE=github.com/lipcsei/* - egy modul-útvonal, nem titok.
+  - DL3064
+
+failure-threshold: warning

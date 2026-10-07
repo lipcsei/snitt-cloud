@@ -1,0 +1,25 @@
+# sqlfluff - forrás: lipcsei/commons ops/static.
+#
+# ELTÉRÉS a közös alaptól: az account szolgáltatás adatbázisa PostgreSQL 16 (pgx, lásd
+# deploy/docker-compose.yml és internal/store/store.go), nem MySQL - a séma TIMESTAMPTZ-t, JSONB-t,
+# részleges indexet és SEQUENCE-t használ. sqlc nincs: a lekérdezések a Go-kódban vannak, a
+# sqlfluff itt egyedül a schema.sql-t látja.
+#
+# Mire való itt: a fájlok ÉRVÉNYES PostgreSQL-ek-e (elírt kulcsszó, félbemaradt utasítás), és néhány
+# valódi hibát fogó szabály (pl. `= NULL` az `IS NULL` helyett). Formázónak NEM használjuk: a
+# már lefutott migrációkat és a sqlc-lekérdezéseket nem írjuk át pusztán a külalakért.
+[sqlfluff]
+dialect = postgres
+# A schema.sql sima SQL, sablon és helykitöltő nélkül (a közös alap `?`-es placeholder-sablonja
+# MySQL/sqlc-re való).
+templater = raw
+# Kihagyva, mert stílus és nem hiba:
+#   layout (LT*)  - behúzás, szóközök, sortörés
+#   AL01          - tábla-alias AS nélkül
+#   AM04          - SELECT *: a sqlc a séma alapján úgyis kibontja
+#   AM05          - JOIN az INNER kiírása nélkül
+#   CP03          - függvénynevek kis-/nagybetűje
+#   RF02          - minősítetlen oszlop többtáblás lekérdezésben: a kétértelműt a Postgres is elutasítja
+#   RF04          - kulcsszó mint azonosító: a meglévő oszlopneveket (name, status...) nem nevezzük át
+#   ST06, ST09    - a SELECT-lista és a JOIN-feltétel sorrendje
+exclude_rules = layout, AL01, AM04, AM05, CP03, RF02, RF04, ST06, ST09

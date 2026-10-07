@@ -28,12 +28,18 @@ ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
     VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
 RUN npm run build
 
-FROM nginx:1.27-alpine
+# nginx-unprivileged, nem a sima nginx: az utóbbi root-ként indul (trivy DS-0002). Ez a kép
+# uid 101-ként fut, ezért nem kötheti a 80-at - 8080-on hallgat (lásd nginx.conf), és a
+# deploy/docker-compose.yml port-leképezése is ehhez igazodik (a hoszton marad a 8088).
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+EXPOSE 8080
+# A base image maga is erre állítja, de a Dockerfile-t vizsgáló eszközök (trivy) csak azt látják,
+# ami itt ki van írva.
+USER 101
 # 127.0.0.1 és nem localhost: a konténerben a localhost előbb ::1-re oldódik
 # fel, az nginx viszont alapból csak IPv4-en figyel - a healthcheck így
 # "connection refused"-ot kapna egy tökéletesen működő kiszolgálótól.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+  CMD ["wget", "-qO", "/dev/null", "http://127.0.0.1:8080/"]

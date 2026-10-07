@@ -57,7 +57,7 @@ type TokenClaims = {
 };
 
 function claims(): TokenClaims | undefined {
-  return (keycloak.tokenParsed ?? keycloak.idTokenParsed) as TokenClaims | undefined;
+  return keycloak.tokenParsed ?? keycloak.idTokenParsed;
 }
 
 export function readProfile(): AdminProfile | null {
