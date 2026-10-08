@@ -18,12 +18,16 @@ ARG VITE_KEYCLOAK_CLIENT_ID=snitt-landing
 ARG SITE_URL=http://localhost:8088
 # Opcionális hibajelentés (GlitchTip). Üres DSN = kikapcsolva: az SDK ilyenkor a
 # csomagba sem kerül be. Az environment üresen a Vite módját (production) kapja.
+# A közös jogi szolgáltatás (lipcsei/jogi) nyilvános címe: az /aszf és az /adatvedelem innen
+# tölti a hatályos szöveget. Üresen a csomagba égetett szöveg látszik.
+ARG VITE_JOGI_URL=
 ARG VITE_SENTRY_DSN=
 ARG VITE_SENTRY_ENVIRONMENT=
 ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
     VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM \
     VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID \
     SITE_URL=$SITE_URL \
+    VITE_JOGI_URL=$VITE_JOGI_URL \
     VITE_SENTRY_DSN=$VITE_SENTRY_DSN \
     VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
 RUN npm run build

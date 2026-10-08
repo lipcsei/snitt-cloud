@@ -46,8 +46,15 @@ Másold le a `.env.example` fájlt `.env` néven, ha az alapértelmezéseken vá
 | `VITE_KEYCLOAK_CLIENT_ID` | `snitt-landing`      | A landing oldalhoz tartozó public client neve |
 | `VITE_SENTRY_DSN`         | *(üres)*                | Opcionális hibajelentés a GlitchTipbe; üresen teljesen kikapcsolva |
 | `VITE_SENTRY_ENVIRONMENT` | a Vite módja            | A környezet neve az eseményeken              |
+| `VITE_JOGI_URL`           | *(üres)*                | A közös jogi szolgáltatás (`lipcsei/jogi`) nyilvános címe; üresen a beégetett jogi szövegek látszanak |
 
 A Vite csak build- és dev-időben olvassa ezeket, tehát környezetváltáskor újra kell buildelni.
+
+Az `/aszf` és az `/adatvedelem` szövege a közös jogi szolgáltatásban él, verziózva
+(`src/lib/jogi.ts`, `src/pages/RemoteLegal.tsx`): beállított `VITE_JOGI_URL` mellett az oldal a
+HATÁLYOS verziót tölti onnan. A `pages/Terms.tsx` és a `pages/PrivacyPolicy.tsx` a TARTALÉK (ha a
+szolgáltatás nincs bekötve vagy nem érhető el) - új verzió nem oda kerül. Élesben a GitHub Pages
+build a `JOGI_URL` repository variable-ből kapja (`ci.yml`). Elfogadást a landing nem kér.
 
 A hibajelentés (`src/sentry.tsx`) nyilvános oldalon fut, ezért az SDK nem része a fő csomagnak:
 csak beállított `VITE_SENTRY_DSN` mellett, külön csomagként töltődik be (üresen a csomag el sem
