@@ -117,7 +117,10 @@ func splitAudiences(audience string) []string {
 	return out
 }
 
-// Verify ellenőrzi az aláírást, az issuert, a lejáratot és az audience-t.
+// accessTokenType a Keycloak access tokenjeinek `typ` mezője.
+const accessTokenType = "Bearer"
+
+// Verify ellenőrzi az aláírást, az issuert, a lejáratot, az audience-t és a token típusát.
 func (v *OIDCVerifier) Verify(ctx context.Context, rawToken string) (Identity, error) {
 	tok, err := v.verifier.Verify(ctx, rawToken)
 	if err != nil {
@@ -126,6 +129,15 @@ func (v *OIDCVerifier) Verify(ctx context.Context, rawToken string) (Identity, e
 	var id Identity
 	if err := tok.Claims(&id); err != nil {
 		return Identity{}, fmt.Errorf("%w: claimek kiolvasása: %v", ErrUnauthenticated, err)
+	}
+	// Csak access token. Ugyanennek a belépésnek az ID tokenje ugyanazzal a kibocsátóval és
+	// audience-szel készül (az audience ott maga a kliens), tehát a fenti ellenőrzéseken átmenne -
+	// de nem API-hívásra való. A Keycloak access tokenjének típusa "Bearer", az ID tokené "ID".
+	var meta struct {
+		Type string `json:"typ"`
+	}
+	if err := tok.Claims(&meta); err != nil || meta.Type != accessTokenType {
+		return Identity{}, fmt.Errorf("%w: nem access token (typ=%q)", ErrUnauthenticated, meta.Type)
 	}
 	if id.Subject == "" {
 		// A go-oidc a Subject claimet külön is kiadja, de a struct-tag alapú
