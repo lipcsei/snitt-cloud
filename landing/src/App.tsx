@@ -8,6 +8,7 @@ import Install from './pages/Install';
 import Profile from './pages/Profile';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
+import RemoteLegal from './pages/RemoteLegal';
 import { NotYetProvider } from './NotYetProvider';
 import { AnalyticsConsentProvider } from './features/consent/AnalyticsConsentProvider';
 import ConsentBanner from './features/consent/ConsentBanner';
@@ -57,8 +58,30 @@ export default function App() {
               {/* Nyelvsemleges, nyelv-előtag nélküli jogi oldalak: a jogi dokumentumok
                   egyelőre kizárólag magyarul készülnek el, ezért NEM tartoznak a
                   PATHS/RouteKey rendszerhez - ugyanaz az útvonal minden nyelvről. */}
-              <Route path="/adatvedelem" element={<PrivacyPolicy />} />
-              <Route path="/aszf" element={<Terms />} />
+              {/* A HATÁLYOS szöveg a közös jogi szolgáltatásból jön (lib/jogi.ts); a beégetett
+                  oldal a tartalék, ha az nincs bekötve vagy nem érhető el. */}
+              <Route
+                path="/adatvedelem"
+                element={
+                  <RemoteLegal
+                    kind="adatvedelem"
+                    eyebrow="Adatvédelem"
+                    other={{ to: '/aszf', label: 'Általános Szerződési Feltételek' }}
+                    fallback={<PrivacyPolicy />}
+                  />
+                }
+              />
+              <Route
+                path="/aszf"
+                element={
+                  <RemoteLegal
+                    kind="aszf"
+                    eyebrow="ÁSZF"
+                    other={{ to: '/adatvedelem', label: 'Adatvédelmi tájékoztató' }}
+                    fallback={<Terms />}
+                  />
+                }
+              />
 
               {/* Ismeretlen /en/... vagy /de/... útvonalról az adott nyelv
                   főoldalára megyünk, hogy a látogató ne essen át egy másikra. */}

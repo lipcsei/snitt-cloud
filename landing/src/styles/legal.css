@@ -78,3 +78,18 @@
   padding-top: 24px;
   border-top: 1px solid var(--border);
 }
+
+/* A közös jogi szolgáltatásból töltött szöveg (pages/RemoteLegal.tsx): kész HTML jön, <section>
+   keretek nélkül, ezért a szakaszok közti térközt itt a címsor adja. A bekezdések és a listák a
+   fenti .legal-content szabályokat öröklik. */
+.legal-remote h2 {
+  margin-top: 32px;
+}
+
+.legal-remote h2:first-child {
+  margin-top: 0;
+}
+
+.legal-remote a {
+  overflow-wrap: anywhere;
+}

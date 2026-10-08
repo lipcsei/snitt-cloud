@@ -116,6 +116,10 @@ jobs:
           # A telepítők letöltési helye (opcionális): üresen az alapértelmezés,
           # https://api.snitt.video/downloads - lásd a snitt repo docs/KIADAS.md-jét.
           VITE_DOWNLOAD_BASE_URL: ${{ vars.DOWNLOAD_BASE_URL }}
+          # A közös jogi szolgáltatás nyilvános címe (opcionális, repository variable): ha meg
+          # van adva, az /aszf és az /adatvedelem onnan tölti a hatályos szöveget. Üresen a
+          # csomagba égetett szöveg látszik - ez a mai állapot.
+          VITE_JOGI_URL: ${{ vars.JOGI_URL }}
           # Opcionális hibajelentés (GlitchTip): a landing projekt DSN-je, szintén
           # repository variable. Üres/hiányzó = kikapcsolva, az SDK a csomagba sem kerül.
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN_LANDING }}
