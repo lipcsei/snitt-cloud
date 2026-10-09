@@ -69,10 +69,6 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   void: 'Sztornó',
 };
 
-export function daysUntil(iso: string): number {
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
-}
-
 /**
  * A napló műveleteinek magyar címkéi. A kulcs a szerver gépi neve; ismeretlen
  * kulcsnál a nyers érték látszik, nem üres cella - a napló akkor is olvasható

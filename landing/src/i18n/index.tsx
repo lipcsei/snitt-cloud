@@ -135,7 +135,3 @@ export function useI18n(): I18n {
 export function useT(): Strings {
   return useI18n().t;
 }
-
-export function useLang(): Lang {
-  return useI18n().lang;
-}
