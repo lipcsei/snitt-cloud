@@ -4,7 +4,8 @@ Ez a lista egy vadonatúj, semmivel fel nem installált szerveren (Ubuntu/Debian
 feltételezve) viszi végig a Snitt felhő oldalának (`account` + `admin` +
 Postgres) első felállítását; a TLS-t a megosztott `edge` proxy adja (lásd
 4c. pont). A cél állapot:
-`git push origin main` után a GitHub Actions automatikusan kitelepít –
+a kitelepítést a GitHub Actions végzi, **csak kérésre**, kézzel indítva
+(Actions → *Deploy VPS* → *Run workflow*; a `main`-re kerülő változás magától nem megy ki) –
 lásd [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
 
 A `landing` NEM ide megy – az GitHub Pages-en fut, lásd
@@ -360,4 +361,4 @@ A DSN a GlitchTip projekt *Client Keys (DSN)* oldalán van (a projekteket a `gli
 - Az `sso` és az `edge` repónak is saját `Deploy VPS` workflow-ja van
   (`sso-prod`, illetve `edge-prod` environment, mindegyikben a saját
   `VPS_*` secretek – a GitHub nem oszt meg secretet repók között). Amíg a
-  secretek nincsenek beállítva, az automatikus futás zölden kimarad.
+  secretek nincsenek beállítva, az indítás hibával áll le.

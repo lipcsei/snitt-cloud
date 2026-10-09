@@ -1,4 +1,4 @@
-# Automatikus kitelepítés a VPS-re, minden sikeres main-ági CI után.
+# Kitelepítés a VPS-re - CSAK KÉRÉSRE, kézzel indítva: magától semmi nem megy ki élesre.
 #
 # A titkok (jelszavak, kliens secret) forrása a VPS_ENV GitHub secret -
 # ez a deploy/.env.prod.example alapján kitöltött fájl TELJES tartalma.
@@ -20,12 +20,9 @@
 name: Deploy VPS
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types: [completed]
-  # Kézi újrafuttatás, ha a szerveren kellett valamit tisztázni, vagy csak
-  # a VPS_ENV secret frissítése után kell újraküldeni build nélkül.
+  # CSAK KÉRÉSRE: a kitelepítés kézzel indul (Actions -> Deploy VPS -> Run workflow, vagy
+  # `gh workflow run deploy.yml`). A main-re kerülő változás magától nem megy ki élesre. A kézi
+  # indítás a CI állapotát nem nézi: indítás előtt azt te ellenőrzöd.
   workflow_dispatch:
 
 # Két deploy soha ne fusson egyszerre (ugyanazokért a konténerekért
@@ -38,9 +35,6 @@ jobs:
   deploy:
     name: Kitelepítés SSH-n
     runs-on: ubuntu-latest
-    # workflow_run esetén csak akkor fusson, ha az előző CI zöld volt -
-    # egy piros CI-ból soha ne menjen ki semmi élesre.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     # A secretek (VPS_HOST/VPS_USER/VPS_SSH_KEY/VPS_ENV) a
     # "snitt-cloud-prod" Environmenthez vannak felvéve a repo
     # Settings-jében - environment secretek NEM látszanak egy jobnak, ha az
