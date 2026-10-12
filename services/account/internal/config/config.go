@@ -31,7 +31,21 @@ type Config struct {
 	SentryDSN         string
 	SentryEnvironment string
 	SentryRelease     string
+
+	// Online fizetés (Stripe Checkout). Üres StripeSecretKey = kikapcsolva:
+	// ilyenkor minden előfizetés kézi admin döntés marad.
+	StripeSecretKey     string
+	StripeWebhookSecret string
+	// StripePrices: csomagkulcs -> Stripe ár azonosító (price_...).
+	StripePrices map[string]string
+	// StripeManagedPayments: a Stripe a kereskedő (áfa, számla, viták).
+	StripeManagedPayments bool
+	CheckoutSuccessURL    string
+	CheckoutCancelURL     string
 }
+
+// StripeEnabled igaz, ha az online fizetés be van kapcsolva.
+func (c Config) StripeEnabled() bool { return c.StripeSecretKey != "" }
 
 // Load beolvassa a konfigurációt a környezetből és validálja.
 func Load() (Config, error) {
@@ -55,6 +69,16 @@ func Load() (Config, error) {
 		SentryDSN:         env("SENTRY_DSN", ""),
 		SentryEnvironment: env("SENTRY_ENVIRONMENT", "development"),
 		SentryRelease:     env("SENTRY_RELEASE", ""),
+
+		StripeSecretKey:     env("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret: env("STRIPE_WEBHOOK_SECRET", ""),
+		StripePrices: map[string]string{
+			"monthly":  env("STRIPE_PRICE_MONTHLY", ""),
+			"lifetime": env("STRIPE_PRICE_LIFETIME", ""),
+		},
+		StripeManagedPayments: env("STRIPE_MANAGED_PAYMENTS", "true") != "false",
+		CheckoutSuccessURL:    env("CHECKOUT_SUCCESS_URL", "https://snitt.video/fiok?fizetes=sikeres"),
+		CheckoutCancelURL:     env("CHECKOUT_CANCEL_URL", "https://snitt.video/fiok?fizetes=megszakitva"),
 	}
 	// Containeren belül a Keycloak más hosztnéven érhető el ("keycloak"), mint
 	// ahogy a tokenek issuer claimje szól ("localhost"). Alapból a kettő azonos.
@@ -71,6 +95,16 @@ func Load() (Config, error) {
 	}
 	if len(c.DefaultCurrency) != 3 {
 		return Config{}, fmt.Errorf("DEFAULT_CURRENCY három betűs ISO kód kell legyen")
+	}
+	if c.StripeEnabled() {
+		if c.StripeWebhookSecret == "" {
+			return Config{}, fmt.Errorf("STRIPE_WEBHOOK_SECRET kötelező, ha a STRIPE_SECRET_KEY be van állítva")
+		}
+		for plan, price := range c.StripePrices {
+			if price == "" {
+				return Config{}, fmt.Errorf("a(z) %s csomag Stripe ára hiányzik (STRIPE_PRICE_%s)", plan, strings.ToUpper(plan))
+			}
+		}
 	}
 	if c.SentryEnvironment == "production" {
 		if err := c.checkProduction(); err != nil {

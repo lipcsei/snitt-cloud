@@ -125,3 +125,18 @@ CREATE INDEX IF NOT EXISTS admin_audit_at_idx ON admin_audit (at DESC);
 CREATE INDEX IF NOT EXISTS admin_audit_subject_idx ON admin_audit (subject);
 CREATE INDEX IF NOT EXISTS admin_audit_actor_idx ON admin_audit (actor_subject);
 CREATE INDEX IF NOT EXISTS admin_audit_action_idx ON admin_audit (action);
+
+-- A fizetési szolgáltató (Stripe) webhook eseményei, amiket már
+-- feldolgoztunk. A szolgáltató ugyanazt az eseményt többször is elküldheti
+-- (újrapróbálkozás), ez a tábla teszi a feldolgozást idempotenssé.
+CREATE TABLE IF NOT EXISTS billing_events (
+    provider    TEXT NOT NULL,
+    event_id    TEXT NOT NULL,
+    event_type  TEXT NOT NULL DEFAULT '',
+    received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (provider, event_id)
+);
+
+CREATE INDEX IF NOT EXISTS subscriptions_external_idx
+    ON subscriptions (provider, external_subscription_id)
+    WHERE external_subscription_id <> '';

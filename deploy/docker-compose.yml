@@ -74,6 +74,15 @@ services:
       # "host.docker.internal" kell (lásd deploy/.env.example).
       SENTRY_DSN: ${SENTRY_DSN_ACCOUNT:-}
       SENTRY_ENVIRONMENT: development
+      # Online fizetés (Stripe Checkout). Üres kulcs = kikapcsolva, minden
+      # előfizetés kézi admin döntés marad. Lásd services/account/.env.example.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY:-}
+      STRIPE_PRICE_LIFETIME: ${STRIPE_PRICE_LIFETIME:-}
+      STRIPE_MANAGED_PAYMENTS: ${STRIPE_MANAGED_PAYMENTS:-true}
+      CHECKOUT_SUCCESS_URL: ${CHECKOUT_SUCCESS_URL:-https://snitt.video/fiok?fizetes=sikeres}
+      CHECKOUT_CANCEL_URL: ${CHECKOUT_CANCEL_URL:-https://snitt.video/fiok?fizetes=megszakitva}
     ports:
       - "8090:8090"
     depends_on:

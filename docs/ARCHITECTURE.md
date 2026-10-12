@@ -6,10 +6,11 @@
 Whisperrel és a meglévő feliratfájlokból átiratot készít (filmenként több nyelven), a kimondott
 szövegre lehet benne keresni, és a találatot ki lehet vágni egy helyi videófájlba.
 
-Ez az app **önmagában, fiók nélkül, teljes értékűen működik**. Minden adata – az index, az
+Ez az app **önmagában, fiók nélkül működik**, amíg a kezdő kreditkerete tart (lásd
+[Üzleti modell](#üzleti-modell-kreditkeret-előfizetés-lifetime)). Minden adata – az index, az
 átiratok, a beállítások – egy helyi SQLite fájlban él a felhasználó gépén. Videó vagy átirat
-soha nem hagyja el a gépet. A felhő oldal **teljes hiánya mellett is** működnie kell: nincs
-kötelező bejelentkezés, nincs hálózati hívás a működéshez.
+soha nem hagyja el a gépet. A kreditkereten belül a felhő oldal **teljes hiánya mellett is**
+működnie kell: addig nincs kötelező bejelentkezés, nincs hálózati hívás a működéshez.
 
 **A felhő oldal (ez a repo)** ehhez képest opcionális kiegészítés:
 
@@ -102,25 +103,65 @@ szinkronizáció csak a csomagok által vezérelt kulcsokat írja felül, a kéz
 független jogosultságokat érintetlenül hagyja. A desktop app így továbbra is egyetlen
 végpontot, a `GET /api/v1/entitlements`-t kérdezi.
 
-## Hol csatlakozik majd a fizetési szolgáltató
+## Üzleti modell: kreditkeret, előfizetés, lifetime
 
-Valódi fizetési szolgáltató (Stripe, Paddle) **nincs bekötve**, és a rendszer senkit nem
-terhel. Az admin kézzel ad előfizetést és kézzel jelöl kifizetettnek egy számlát – ez a
-könyvelés vezetése, nem fizetés.
+A desktop app ingyen letölthető, és egy **kezdő kreditkerettel** indul: minden importált videó
+(mappából vagy linkről) egy kreditet visz el. Amíg van kredit, fiók nélkül is teljes értékű.
+Ha elfogyott, az alkalmazás zárolódik, és csak bejelentkezve, a **`snitt-app-access`**
+jogosultsággal használható tovább. Ezt minden fizetős csomag megadja:
 
-A varrat egy helyen van: **`services/account/internal/billing`**, a `Provider` interfész. Ma
-egyetlen implementációja a `Manual`, ami semmilyen külső hívást nem végez. A HTTP réteg soha nem
-hív szolgáltató-specifikus kódot, csak ezt az interfészt (`EnsureCustomer`, `StartSubscription`,
-`CancelSubscription`), ezért egy valódi szolgáltató bekötése:
+| Csomag | Ár | Fajta | Ki adhatja ki |
+|---|---|---|---|
+| `monthly` (Előfizetés) | 1 490 Ft / hó | ismétlődő | önkiszolgáló (Stripe) vagy admin |
+| `lifetime` (Lifetime) | 24 990 Ft | egyszeri, soha nem jár le | önkiszolgáló (Stripe) vagy admin |
+| `pro`, `studio` | 2 990 / 7 990 Ft | ismétlődő, AI-funkciókkal | admin |
 
-1. új `Provider` implementáció ugyanebben a csomagban,
-2. a `cmd/server/main.go` a `billing.Manual{}` helyett azt adja a `httpapi.Options`-nek,
-3. a szolgáltató webhookja egy új végponton a már meglévő `store.MarkInvoicePaid` /
-   előfizetés-frissítő függvényeket hívja.
+A **lifetime** is egy `subscriptions` sor (így a „legfeljebb egy élő előfizetés” szabály és az
+entitlement-szinkron változatlan), csak a periódusa 100 év, a jogosultságnak pedig nincs
+lejárata. Az MRR nem számolja bele: az egyszeri díj nem havi bevétel.
 
-A séma ehhez már készen áll: a `subscriptions` és az `invoices` tábla is hordoz `provider` és
-`external_*` oszlopot, ma `manual` / üres értékkel. Ezért a bekötéshez nem kell séma-átalakítás,
-és a meglévő, kézzel felvitt sorok is megkülönböztethetők maradnak.
+## A fizetési szolgáltató: Stripe Checkout
+
+A varrat továbbra is **`services/account/internal/billing`**, a `Provider` interfész. Két
+implementáció van:
+
+- **`Manual`** – nincs külső hívás; az admin kézzel ad előfizetést és jelöl kifizetettnek egy
+  számlát. Ez az alapértelmezés, ha a `STRIPE_SECRET_KEY` üres.
+- **`Stripe`** – a felhasználó maga vásárol. Az SDK helyett közvetlen HTTP-hívások: négy
+  végpontról van szó, és így nincs nagy, gyakran változó függőség.
+
+A folyamat:
+
+1. A desktop app a bejelentkezett felhasználó tokenjével hívja a `POST /api/v1/checkout`-ot
+   (`{"plan": "monthly" | "lifetime"}`). Az account egy Stripe Checkout munkamenetet nyit
+   (havinál `mode=subscription`, lifetime-nál `mode=payment`), a `subject`-et a metadata-ba
+   téve, és visszaadja a fizetési oldal címét. Az app ezt a **rendszer böngészőjében** nyitja
+   meg. Kártyaadat soha nem jár nálunk.
+2. A fizetés eredménye webhookon jön: `POST /api/v1/billing/webhook`. Nincs rajta
+   token-ellenőrzés; a hitelességet a `Stripe-Signature` HMAC aláírás adja (5 perces
+   időablakkal a visszajátszás ellen).
+   - `checkout.session.completed` (vagy késleltetett fizetési módnál
+     `checkout.session.async_payment_succeeded`) → előfizetés (vagy lifetime) kiadása + kifizetett számla,
+   - `customer.subscription.updated` → időszak, státusz, periódus végi lemondás,
+   - `customer.subscription.deleted` → lemondva, a jogosultság visszavonva,
+   - `invoice.paid` (megújulás) → kifizetett számla a saját könyvbe.
+3. A `billing_events` tábla a már feldolgozott eseményeket tartja: a Stripe ugyanazt többször
+   is elküldheti. A feldolgozás hibája 5xx, hogy a Stripe újrapróbálja; a sorrend sem
+   garantált, ezért az ismeretlen előfizetésre vonatkozó frissítés is 5xx (később újra jön).
+4. A webhookból végzett műveletek is az admin naplóba kerülnek, `system:billing-webhook`
+   szereplővel.
+
+**Adó, számla, viták: Stripe Managed Payments.** Alapból (`STRIPE_MANAGED_PAYMENTS=true`) a
+Stripe a kereskedő: ő számolja és fizeti be az áfát a vevő országa szerint, ő küldi a
+számlát/nyugtát, és ő kezeli a visszatérítéseket és a vitás terheléseket, tranzakciónként +3,5%
+díjért. Ehhez a Checkout `managed_payments[enabled]=true` paramétert kap, saját számlát
+(`invoice_creation`) nem kér, és minden hívás `Stripe-Version: 2025-03-31.basil` fejlécet
+küld (a webhook végpontot is erre a verzióra kell állítani). A Stripe termékeken az adókód
+`txcd_10202000`, az árak adózási módja `inclusive`, így a kiírt ár a vevő végösszege. A saját
+`invoices` táblába írt összeg ennek megfelelően bruttó, a könyvelési bizonylat a Stripe-é.
+
+A `GET /api/v1/plans` nyilvános: a desktop app fizetési képernyője ebből mutat árat, és azt is
+megmondja, be van-e kapcsolva az online fizetés (`checkout_enabled`).
 
 ## A desktop app jövőbeli belépése
 
@@ -130,5 +171,6 @@ loopback redirect), de még nincs használatban. Amikor a desktop app bejelentke
 kliens tokenjébe egy audience mapper teszi bele a `snitt-landing` audience-t, hogy az account
 szolgáltatásnak egyetlen elvárt audience-t kelljen ellenőriznie.
 
-Fontos, hogy ez **opcionális marad**: a bejelentkezés csak extra funkciókat kapcsol be, a
-meglévő működés bejelentkezés nélkül változatlan.
+A bejelentkezés addig opcionális, amíg a kezdő kreditkeret tart; utána a használathoz a
+`snitt-app-access` jogosultság kell (lásd fent). A videók és az átiratok ekkor sem kerülnek
+szerverre: a felhő csak azt tudja, ki vagy és mire vagy jogosult.

@@ -426,7 +426,7 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now().UTC()
-	end := now.Add(time.Duration(days) * 24 * time.Hour)
+	end := plan.PeriodEnd(now, days)
 
 	// A varrat: valódi szolgáltatónál itt születne a külső előfizetés. A
 	// Manual implementáció üres azonosítót ad, terhelés nem történik.
@@ -447,7 +447,7 @@ func (a *API) handleGrantSubscription(w http.ResponseWriter, r *http.Request) {
 	}, store.EntitlementSync{
 		Managed:   billing.ManagedFeatureKeys(),
 		Grant:     plan.FeatureKeys,
-		ExpiresAt: &end,
+		ExpiresAt: plan.EntitlementExpiry(end),
 	})
 	if err != nil {
 		a.writeStoreError(w, r, err, "az előfizetés nem hozható létre")
@@ -540,7 +540,12 @@ func (a *API) handleChangeSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		now := time.Now().UTC()
-		end := now.Add(time.Duration(days) * 24 * time.Hour)
+		end := plan.PeriodEnd(now, days)
+		ch.PeriodStart, ch.PeriodEnd = &now, &end
+	} else if plan.Lifetime {
+		// Lifetime csomagra váltva a periódus a csomagé: nem jár le.
+		now := time.Now().UTC()
+		end := plan.PeriodEnd(now, 0)
 		ch.PeriodStart, ch.PeriodEnd = &now, &end
 	}
 
@@ -557,7 +562,7 @@ func (a *API) handleChangeSubscription(w http.ResponseWriter, r *http.Request) {
 	sub, err := a.store.ChangeSubscriptionPlan(r.Context(), current.ID, ch, store.EntitlementSync{
 		Managed:   billing.ManagedFeatureKeys(),
 		Grant:     plan.FeatureKeys,
-		ExpiresAt: &expires,
+		ExpiresAt: plan.EntitlementExpiry(expires),
 	})
 	if err != nil {
 		a.writeStoreError(w, r, err, "a csomag nem váltható")
@@ -599,8 +604,7 @@ func (a *API) handleCancelSubscription(w http.ResponseWriter, r *http.Request) {
 		// A periódus végéig jár a hozzáférés: a jogosultságok maradnak,
 		// lejáratuk a periódus vége.
 		if plan, ok := billing.LookupPlan(current.Plan); ok {
-			end := current.CurrentPeriodEnd
-			sync.Grant, sync.ExpiresAt = plan.FeatureKeys, &end
+			sync.Grant, sync.ExpiresAt = plan.FeatureKeys, plan.EntitlementExpiry(current.CurrentPeriodEnd)
 		}
 	}
 
@@ -664,14 +668,14 @@ func (a *API) handleReactivateSubscription(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		end := now.Add(time.Duration(days) * 24 * time.Hour)
+		end := plan.PeriodEnd(now, days)
 		periodStart, periodEnd, expires = &now, &end, end
 	}
 
 	sub, err := a.store.ReactivateSubscription(r.Context(), current.ID, periodStart, periodEnd, store.EntitlementSync{
 		Managed:   billing.ManagedFeatureKeys(),
 		Grant:     plan.FeatureKeys,
-		ExpiresAt: &expires,
+		ExpiresAt: plan.EntitlementExpiry(expires),
 	})
 	if err != nil {
 		a.writeStoreError(w, r, err, "az előfizetés nem kapcsolható vissza")

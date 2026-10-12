@@ -80,17 +80,31 @@ func run(log *slog.Logger) error {
 	log.Info("keycloak admin kliens kész",
 		"base_url", cfg.KeycloakBaseURL, "realm", cfg.KeycloakRealm, "client_id", cfg.AdminClientID)
 
+	// Online fizetés: Stripe Checkout, ha be van állítva; különben minden
+	// előfizetés és számla kézi admin döntés marad. Lásd internal/billing.
+	var provider billing.Provider = billing.Manual{}
+	if cfg.StripeEnabled() {
+		provider = billing.NewStripe(billing.StripeConfig{
+			SecretKey:       cfg.StripeSecretKey,
+			WebhookSecret:   cfg.StripeWebhookSecret,
+			PriceIDs:        cfg.StripePrices,
+			ManagedPayments: cfg.StripeManagedPayments,
+		})
+		log.Info("online fizetés bekapcsolva", "provider", provider.Name(), "managed_payments", cfg.StripeManagedPayments)
+	}
+
 	api := httpapi.New(httpapi.Options{
-		Store:     st,
-		Verifier:  verifier,
-		Directory: directory,
-		// Valódi fizetési szolgáltató még nincs bekötve: minden előfizetés és
-		// számla kézi admin döntés. Lásd internal/billing.
-		Billing:         billing.Manual{},
+		Store:           st,
+		Verifier:        verifier,
+		Directory:       directory,
+		Billing:         provider,
 		CORSOrigins:     cfg.CORSOrigins,
 		AdminRole:       cfg.AdminRole,
 		DefaultCurrency: cfg.DefaultCurrency,
 		Log:             log,
+
+		CheckoutSuccessURL: cfg.CheckoutSuccessURL,
+		CheckoutCancelURL:  cfg.CheckoutCancelURL,
 	})
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

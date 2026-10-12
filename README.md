@@ -11,5 +11,6 @@ A [Snitt](https://github.com/lipcsei/snitt) asztali alkalmazás **opcionális fe
 nyilvános landing (`snitt.video`), a fiókokat és előfizetéseket nyilvántartó account szolgáltatás,
 és a hozzá tartozó belső admin felület.
 
-A desktop app ettől függetlenül, fiók és hálózat nélkül is teljes értékűen működik; videó vagy
+A desktop app egy ingyenes kreditkeretig fiók és hálózat nélkül is működik, utána előfizetés vagy
+lifetime hozzáférés kell hozzá (Stripe-on át, ez a repó kezeli); videó vagy
 átirat soha nem kerül ide. A miértekről a [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) szól.

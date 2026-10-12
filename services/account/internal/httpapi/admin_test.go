@@ -125,6 +125,10 @@ type adminFake struct {
 	// el az admin műveletet, ezt csak külön kapcsolóval lehet előidézni.
 	audit    []store.AuditEntry
 	auditErr error
+
+	// A fizetési webhook állapota, lásd checkout_test.go.
+	providerEvents     map[string]bool
+	lastProviderUpdate store.ProviderUpdate
 }
 
 func (f *fakeStore) GetProfile(_ context.Context, subject string) (store.Profile, error) {
@@ -223,6 +227,7 @@ func (f *fakeStore) GrantSubscription(_ context.Context, in store.NewSubscriptio
 		ID: "sub-new", Subject: in.Subject, Plan: in.Plan, Status: store.SubActive,
 		CurrentPeriodStart: in.PeriodStart, CurrentPeriodEnd: in.PeriodEnd,
 		PriceMinor: in.PriceMinor, Currency: in.Currency, Provider: in.Provider,
+		ExternalCustomerID: in.ExternalCustomerID, ExternalSubscriptionID: in.ExternalSubscriptionID,
 	}
 	f.admin.ensure()
 	f.admin.subscriptions[sub.ID] = sub
@@ -670,7 +675,7 @@ func TestGrantSubscription(t *testing.T) {
 			wantStatus:  http.StatusCreated,
 			wantPlan:    "pro",
 			wantPrice:   299000,
-			wantGrants:  []string{"ai-semantic-search"},
+			wantGrants:  []string{"ai-semantic-search", "snitt-app-access"},
 			wantInvoice: 1,
 		},
 		{
@@ -679,7 +684,7 @@ func TestGrantSubscription(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantPlan:   "studio",
 			wantPrice:  799000,
-			wantGrants: []string{"ai-semantic-search", "ai-video-understanding"},
+			wantGrants: []string{"ai-semantic-search", "ai-video-understanding", "snitt-app-access"},
 		},
 		{
 			name:       "egyedi ár és időszak",
@@ -687,7 +692,7 @@ func TestGrantSubscription(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantPlan:   "pro",
 			wantPrice:  0,
-			wantGrants: []string{"ai-semantic-search"},
+			wantGrants: []string{"ai-semantic-search", "snitt-app-access"},
 		},
 		{"ismeretlen csomag", `{"subject":"u1","plan":"arany"}`, nil, http.StatusBadRequest, "", 0, nil, 0},
 		{"hiányzó subject", `{"plan":"pro"}`, nil, http.StatusBadRequest, "", 0, nil, 0},
@@ -776,9 +781,9 @@ func TestChangeSubscriptionPlan(t *testing.T) {
 		wantGrants []string
 	}{
 		{"váltás studio-ra", "s1", `{"plan":"studio"}`, http.StatusOK,
-			[]string{"ai-semantic-search", "ai-video-understanding"}},
+			[]string{"ai-semantic-search", "ai-video-understanding", "snitt-app-access"}},
 		{"váltás új időszakkal", "s1", `{"plan":"pro","period_days":31}`, http.StatusOK,
-			[]string{"ai-semantic-search"}},
+			[]string{"ai-semantic-search", "snitt-app-access"}},
 		{"ismeretlen csomag", "s1", `{"plan":"arany"}`, http.StatusBadRequest, nil},
 		{"nem létező előfizetés", "nincs", `{"plan":"pro"}`, http.StatusNotFound, nil},
 		{"lemondott előfizetés", "s2", `{"plan":"studio"}`, http.StatusConflict, nil},
@@ -826,7 +831,7 @@ func TestCancelSubscription(t *testing.T) {
 			name:       "periódus végi lemondás meghagyja a jogosultságokat",
 			body:       `{"at_period_end":true}`,
 			wantAtEnd:  true,
-			wantGrants: []string{"ai-semantic-search"},
+			wantGrants: []string{"ai-semantic-search", "snitt-app-access"},
 			wantExpiry: true,
 			wantStatus: http.StatusOK,
 		},
