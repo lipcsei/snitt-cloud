@@ -50,6 +50,12 @@ type Store interface {
 
 	RecordAudit(ctx context.Context, in store.NewAuditEntry) (store.AuditEntry, error)
 	ListAudit(ctx context.Context, f store.AuditFilter) ([]store.AuditEntry, int, error)
+
+	// A fizetési szolgáltató webhookja által használt műveletek.
+	SubscriptionByExternalID(ctx context.Context, provider, externalID string) (store.Subscription, error)
+	ApplyProviderUpdate(ctx context.Context, id string, upd store.ProviderUpdate, sync store.EntitlementSync) (store.Subscription, error)
+	ProviderEventSeen(ctx context.Context, provider, eventID string) (bool, error)
+	RecordProviderEvent(ctx context.Context, provider, eventID, eventType string) error
 }
 
 // API a HTTP réteg összefogója.
@@ -62,6 +68,9 @@ type API struct {
 	adminRole string
 	currency  string
 	log       *slog.Logger
+
+	checkoutSuccessURL string
+	checkoutCancelURL  string
 }
 
 // Options az API függőségei. Struct, mert a paraméterlista már túl hosszú
@@ -75,6 +84,10 @@ type Options struct {
 	AdminRole       string
 	DefaultCurrency string
 	Log             *slog.Logger
+
+	// Ide tér vissza a böngésző az online fizetés után (sikeres / megszakított).
+	CheckoutSuccessURL string
+	CheckoutCancelURL  string
 }
 
 // New összeállítja az API-t.
@@ -97,6 +110,9 @@ func New(o Options) *API {
 		adminRole: o.AdminRole,
 		currency:  o.DefaultCurrency,
 		log:       o.Log,
+
+		checkoutSuccessURL: o.CheckoutSuccessURL,
+		checkoutCancelURL:  o.CheckoutCancelURL,
 	}
 }
 
@@ -111,6 +127,11 @@ func (a *API) Handler() http.Handler {
 	mux.Handle("GET /api/v1/me", protected(http.HandlerFunc(a.handleGetMe)))
 	mux.Handle("PATCH /api/v1/me", protected(http.HandlerFunc(a.handlePatchMe)))
 	mux.Handle("GET /api/v1/entitlements", protected(http.HandlerFunc(a.handleEntitlements)))
+
+	// Önkiszolgáló vásárlás (lásd checkout.go).
+	mux.HandleFunc("GET /api/v1/plans", a.handlePublicPlans)
+	mux.Handle("POST /api/v1/checkout", protected(http.HandlerFunc(a.handleCheckout)))
+	mux.HandleFunc("POST /api/v1/billing/webhook", a.handleBillingWebhook)
 
 	a.adminRoutes(mux)
 

@@ -82,6 +82,9 @@ type NewSubscription struct {
 	PeriodStart time.Time
 	PeriodEnd   time.Time
 	Provider    string
+	// A szolgáltató oldali azonosítók (kézi kiadásnál üresek).
+	ExternalCustomerID     string
+	ExternalSubscriptionID string
 }
 
 // PlanChange a csomagváltás bemenete. A nil periódus a meglévőt hagyja.
@@ -314,13 +317,14 @@ func (s *Store) GrantSubscription(ctx context.Context, in NewSubscription, sync 
 	err := s.inTx(ctx, func(tx pgx.Tx) error {
 		const q = `
 INSERT INTO subscriptions (id, subject, plan, status, current_period_start, current_period_end,
-                           price_minor, currency, provider)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                           price_minor, currency, provider, external_customer_id, external_subscription_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING ` + subscriptionCols
 
 		id := newID()
 		sub, err := scanSubscription(tx.QueryRow(ctx, q, id, in.Subject, in.Plan, SubActive,
-			in.PeriodStart, in.PeriodEnd, in.PriceMinor, in.Currency, in.Provider))
+			in.PeriodStart, in.PeriodEnd, in.PriceMinor, in.Currency, in.Provider,
+			in.ExternalCustomerID, in.ExternalSubscriptionID))
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -587,7 +591,8 @@ func (s *Store) Overview(ctx context.Context) (Overview, error) {
 SELECT (SELECT count(*) FROM profiles),
        (SELECT count(*) FROM profiles WHERE created_at > now() - interval '30 days'),
        (SELECT count(*) FROM subscriptions WHERE status IN ('active', 'past_due')),
-       (SELECT COALESCE(sum(price_minor), 0) FROM subscriptions WHERE status IN ('active', 'past_due')),
+       -- A lifetime csomag egyszeri díj, nem havi bevétel: az MRR-be nem számít.
+       (SELECT COALESCE(sum(price_minor), 0) FROM subscriptions WHERE status IN ('active', 'past_due') AND plan <> 'lifetime'),
        (SELECT count(*) FROM subscriptions WHERE created_at > now() - interval '30 days'),
        (SELECT count(*) FROM invoices WHERE status = 'open'),
        (SELECT COALESCE(sum(amount_minor), 0) FROM invoices WHERE status = 'open')`

@@ -22,7 +22,14 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 )
+
+// FeatureAppAccess az alkalmazás korlátlan használata. A desktop app
+// ingyenes kreditkerettel indul (importálásonként fogy); ha elfogyott, csak
+// ennek a jogosultságnak a birtokában használható tovább. Minden fizetős
+// csomag tartalmazza.
+const FeatureAppAccess = "snitt-app-access"
 
 // Plan egy megvásárolható csomag. A FeatureKeys pontosan azok az
 // entitlementek, amiket az aktív előfizetés a desktop appban felold.
@@ -32,24 +39,72 @@ type Plan struct {
 	Description string   `json:"description"`
 	PriceMinor  int64    `json:"price_minor"`
 	FeatureKeys []string `json:"feature_keys"`
+	// Lifetime: egyszeri vásárlás, ami soha nem jár le. Ugyanúgy egy
+	// subscriptions sor képviseli (így a "legfeljebb egy élő előfizetés"
+	// szabály és az entitlement-szinkron ugyanaz marad), csak a periódus vége
+	// a távoli jövő, és a jogosultságnak nincs lejárata.
+	Lifetime bool `json:"lifetime"`
+	// SelfService: a felhasználó maga is megveheti (checkout). A többi csomagot
+	// ma csak az admin adhatja ki.
+	SelfService bool `json:"self_service"`
+}
+
+// lifetimeYears: ennyi évre nyitunk periódust a lifetime csomagnak. A séma a
+// periódus végét kötelezővé teszi; a "soha" helyett egy elérhetetlen dátum
+// egyszerűbb, mint egy NULL-t kezelni minden lekérdezésben.
+const lifetimeYears = 100
+
+// PeriodEnd a csomag elszámolási periódusának vége, ha most indul: lifetime
+// csomagnál a távoli jövő, egyébként a megadott napszám.
+func (p Plan) PeriodEnd(start time.Time, days int) time.Time {
+	if p.Lifetime {
+		return start.AddDate(lifetimeYears, 0, 0)
+	}
+	return start.Add(time.Duration(days) * 24 * time.Hour)
+}
+
+// EntitlementExpiry a csomagból következő jogosultságok lejárata: lifetime
+// csomagnál nincs (nil), egyébként a periódus vége.
+func (p Plan) EntitlementExpiry(periodEnd time.Time) *time.Time {
+	if p.Lifetime {
+		return nil
+	}
+	return &periodEnd
 }
 
 // A csomagok kódban vannak, nem adatbázisban: kevés van belőlük, ritkán
 // változnak, és így a hozzájuk tartozó entitlementek sem csúszhatnak el.
 var plans = map[string]Plan{
+	"monthly": {
+		Key:         "monthly",
+		Name:        "Előfizetés",
+		Description: "Korlátlan importálás és használat, havonta megújuló előfizetéssel.",
+		PriceMinor:  149000, // 1 490 Ft / hó
+		FeatureKeys: []string{FeatureAppAccess},
+		SelfService: true,
+	},
+	"lifetime": {
+		Key:         "lifetime",
+		Name:        "Lifetime",
+		Description: "Korlátlan importálás és használat, egyszeri díjért, örökre.",
+		PriceMinor:  2499000, // 24 990 Ft egyszeri
+		FeatureKeys: []string{FeatureAppAccess},
+		Lifetime:    true,
+		SelfService: true,
+	},
 	"pro": {
 		Key:         "pro",
 		Name:        "Pro",
-		Description: "Szemantikus keresés a saját videótárban, AI-alapú találati rangsorral.",
+		Description: "Korlátlan használat, plusz szemantikus keresés a saját videótárban, AI-alapú találati rangsorral.",
 		PriceMinor:  299000, // 2 990 Ft
-		FeatureKeys: []string{"ai-semantic-search"},
+		FeatureKeys: []string{FeatureAppAccess, "ai-semantic-search"},
 	},
 	"studio": {
 		Key:         "studio",
 		Name:        "Studio",
 		Description: "A Pro mindene, plusz videótartalom-értelmezés (jelenet- és arcfelismerés).",
 		PriceMinor:  799000, // 7 990 Ft
-		FeatureKeys: []string{"ai-semantic-search", "ai-video-understanding"},
+		FeatureKeys: []string{FeatureAppAccess, "ai-semantic-search", "ai-video-understanding"},
 	},
 }
 
@@ -129,4 +184,24 @@ func (Manual) CancelSubscription(_ context.Context, externalID string, _ bool) e
 		return fmt.Errorf("külső előfizetés (%s) kézi módban nem mondható le", externalID)
 	}
 	return nil
+}
+
+// CheckoutRequest a felhasználó által indított vásárlás adatai.
+type CheckoutRequest struct {
+	Subject string
+	Email   string
+	Plan    Plan
+	// SuccessURL / CancelURL: ide tér vissza a böngésző a fizetés után.
+	SuccessURL string
+	CancelURL  string
+}
+
+// CheckoutProvider az önkiszolgáló vásárlást támogató szolgáltató: a
+// felhasználót a szolgáltató hosztolt fizetési oldalára küldjük, a fizetés
+// eredménye pedig webhookon érkezik vissza. A Manual nem valósítja meg -
+// nála nincs mit fizetni.
+type CheckoutProvider interface {
+	Provider
+	// CreateCheckout a hosztolt fizetési oldal címét adja vissza.
+	CreateCheckout(ctx context.Context, req CheckoutRequest) (string, error)
 }
