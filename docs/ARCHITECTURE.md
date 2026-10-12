@@ -140,7 +140,8 @@ A folyamat:
 2. A fizetés eredménye webhookon jön: `POST /api/v1/billing/webhook`. Nincs rajta
    token-ellenőrzés; a hitelességet a `Stripe-Signature` HMAC aláírás adja (5 perces
    időablakkal a visszajátszás ellen).
-   - `checkout.session.completed` → előfizetés (vagy lifetime) kiadása + kifizetett számla,
+   - `checkout.session.completed` (vagy késleltetett fizetési módnál
+     `checkout.session.async_payment_succeeded`) → előfizetés (vagy lifetime) kiadása + kifizetett számla,
    - `customer.subscription.updated` → időszak, státusz, periódus végi lemondás,
    - `customer.subscription.deleted` → lemondva, a jogosultság visszavonva,
    - `invoice.paid` (megújulás) → kifizetett számla a saját könyvbe.

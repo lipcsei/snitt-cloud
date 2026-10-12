@@ -104,3 +104,12 @@ func TestCheckoutManagedPayments(t *testing.T) {
 		}
 	}
 }
+
+func TestAsyncPaymentSucceededCompletesCheckout(t *testing.T) {
+	now := time.Now()
+	payload := []byte(`{"id":"evt","type":"checkout.session.async_payment_succeeded","data":{"object":{"payment_status":"paid","metadata":{"subject":"u","plan":"lifetime"},"payment_intent":"pi_1","amount_total":2499000,"currency":"huf"}}}`)
+	ev, err := NewStripe(StripeConfig{WebhookSecret: "w"}).ParseWebhook(payload, SignStripePayload(payload, "w", now), now)
+	if err != nil || ev.Kind != WebhookCheckoutCompleted || ev.Subject != "u" || ev.PaymentID != "pi_1" {
+		t.Errorf("késleltetett fizetés: %+v err=%v", ev, err)
+	}
+}

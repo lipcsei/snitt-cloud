@@ -244,7 +244,9 @@ func (s *Stripe) ParseWebhook(payload []byte, header string, now time.Time) (Web
 	ev := WebhookEvent{ID: env.ID, Type: env.Type}
 
 	switch env.Type {
-	case "checkout.session.completed":
+	// A késleltetett fizetési módok (Managed Paymentsnél a Stripe dönti el,
+	// melyik jelenik meg) a sikeres terhelést külön eseményben jelzik.
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded":
 		var o struct {
 			Mode              string            `json:"mode"`
 			PaymentStatus     string            `json:"payment_status"`
