@@ -85,11 +85,12 @@ func run(log *slog.Logger) error {
 	var provider billing.Provider = billing.Manual{}
 	if cfg.StripeEnabled() {
 		provider = billing.NewStripe(billing.StripeConfig{
-			SecretKey:     cfg.StripeSecretKey,
-			WebhookSecret: cfg.StripeWebhookSecret,
-			PriceIDs:      cfg.StripePrices,
+			SecretKey:       cfg.StripeSecretKey,
+			WebhookSecret:   cfg.StripeWebhookSecret,
+			PriceIDs:        cfg.StripePrices,
+			ManagedPayments: cfg.StripeManagedPayments,
 		})
-		log.Info("online fizetés bekapcsolva", "provider", provider.Name())
+		log.Info("online fizetés bekapcsolva", "provider", provider.Name(), "managed_payments", cfg.StripeManagedPayments)
 	}
 
 	api := httpapi.New(httpapi.Options{

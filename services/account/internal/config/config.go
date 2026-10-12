@@ -37,9 +37,11 @@ type Config struct {
 	StripeSecretKey     string
 	StripeWebhookSecret string
 	// StripePrices: csomagkulcs -> Stripe ár azonosító (price_...).
-	StripePrices       map[string]string
-	CheckoutSuccessURL string
-	CheckoutCancelURL  string
+	StripePrices map[string]string
+	// StripeManagedPayments: a Stripe a kereskedő (áfa, számla, viták).
+	StripeManagedPayments bool
+	CheckoutSuccessURL    string
+	CheckoutCancelURL     string
 }
 
 // StripeEnabled igaz, ha az online fizetés be van kapcsolva.
@@ -74,8 +76,9 @@ func Load() (Config, error) {
 			"monthly":  env("STRIPE_PRICE_MONTHLY", ""),
 			"lifetime": env("STRIPE_PRICE_LIFETIME", ""),
 		},
-		CheckoutSuccessURL: env("CHECKOUT_SUCCESS_URL", "https://snitt.video/fiok?fizetes=sikeres"),
-		CheckoutCancelURL:  env("CHECKOUT_CANCEL_URL", "https://snitt.video/fiok?fizetes=megszakitva"),
+		StripeManagedPayments: env("STRIPE_MANAGED_PAYMENTS", "true") != "false",
+		CheckoutSuccessURL:    env("CHECKOUT_SUCCESS_URL", "https://snitt.video/fiok?fizetes=sikeres"),
+		CheckoutCancelURL:     env("CHECKOUT_CANCEL_URL", "https://snitt.video/fiok?fizetes=megszakitva"),
 	}
 	// Containeren belül a Keycloak más hosztnéven érhető el ("keycloak"), mint
 	// ahogy a tokenek issuer claimje szól ("localhost"). Alapból a kettő azonos.

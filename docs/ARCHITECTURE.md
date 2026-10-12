@@ -150,6 +150,15 @@ A folyamat:
 4. A webhookból végzett műveletek is az admin naplóba kerülnek, `system:billing-webhook`
    szereplővel.
 
+**Adó, számla, viták: Stripe Managed Payments.** Alapból (`STRIPE_MANAGED_PAYMENTS=true`) a
+Stripe a kereskedő: ő számolja és fizeti be az áfát a vevő országa szerint, ő küldi a
+számlát/nyugtát, és ő kezeli a visszatérítéseket és a vitás terheléseket, tranzakciónként +3,5%
+díjért. Ehhez a Checkout `managed_payments[enabled]=true` paramétert kap, saját számlát
+(`invoice_creation`) nem kér, és minden hívás `Stripe-Version: 2025-03-31.basil` fejlécet
+küld (a webhook végpontot is erre a verzióra kell állítani). A Stripe termékeken az adókód
+`txcd_10202000`, az árak adózási módja `inclusive`, így a kiírt ár a vevő végösszege. A saját
+`invoices` táblába írt összeg ennek megfelelően bruttó, a könyvelési bizonylat a Stripe-é.
+
 A `GET /api/v1/plans` nyilvános: a desktop app fizetési képernyője ebből mutat árat, és azt is
 megmondja, be van-e kapcsolva az online fizetés (`checkout_enabled`).
 

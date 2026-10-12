@@ -80,6 +80,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY:-}
       STRIPE_PRICE_LIFETIME: ${STRIPE_PRICE_LIFETIME:-}
+      STRIPE_MANAGED_PAYMENTS: ${STRIPE_MANAGED_PAYMENTS:-true}
       CHECKOUT_SUCCESS_URL: ${CHECKOUT_SUCCESS_URL:-https://snitt.video/fiok?fizetes=sikeres}
       CHECKOUT_CANCEL_URL: ${CHECKOUT_CANCEL_URL:-https://snitt.video/fiok?fizetes=megszakitva}
     ports:

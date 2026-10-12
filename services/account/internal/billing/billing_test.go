@@ -1,7 +1,11 @@
 package billing
 
 import (
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -66,5 +70,37 @@ func TestStripeIgnoresUnpaidCheckout(t *testing.T) {
 	ev, err := NewStripe(StripeConfig{WebhookSecret: "w"}).ParseWebhook(payload, SignStripePayload(payload, "w", now), now)
 	if err != nil || ev.Kind != WebhookIgnored {
 		t.Errorf("kifizetetlen checkout: kind=%q err=%v", ev.Kind, err)
+	}
+}
+
+func TestCheckoutManagedPayments(t *testing.T) {
+	lifetime, ok := LookupPlan("lifetime")
+	if !ok {
+		t.Fatal("nincs lifetime csomag")
+	}
+	for _, managed := range []bool{true, false} {
+		var form url.Values
+		var version string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_ = r.ParseForm()
+			form, version = r.PostForm, r.Header.Get("Stripe-Version")
+			_, _ = w.Write([]byte(`{"url":"https://checkout.stripe.test/cs_1"}`))
+		}))
+		s := NewStripe(StripeConfig{PriceIDs: map[string]string{"lifetime": "price_l"}, APIBase: srv.URL, ManagedPayments: managed})
+		_, err := s.CreateCheckout(context.Background(), CheckoutRequest{Plan: lifetime, Subject: "u", SuccessURL: "https://x", CancelURL: "https://y"})
+		srv.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if version != StripeAPIVersion {
+			t.Errorf("Stripe-Version = %q", version)
+		}
+		if got := form.Get("managed_payments[enabled]") == "true"; got != managed {
+			t.Errorf("managed=%v: managed_payments[enabled] = %q", managed, form.Get("managed_payments[enabled]"))
+		}
+		// Managed Paymentsnél a számlát a Stripe adja, saját nem kérhető.
+		if got := form.Get("invoice_creation[enabled]") == "true"; got == managed {
+			t.Errorf("managed=%v: invoice_creation = %q", managed, form.Get("invoice_creation[enabled]"))
+		}
 	}
 }

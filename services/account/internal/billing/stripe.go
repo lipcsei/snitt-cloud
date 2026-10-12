@@ -24,9 +24,18 @@ type StripeConfig struct {
 	SecretKey     string
 	WebhookSecret string
 	PriceIDs      map[string]string
+	// ManagedPayments: a Stripe a kereskedő (merchant of record) - ő számolja
+	// és fizeti be az áfát országonként, ő állítja ki a számlát/nyugtát, és ő
+	// kezeli a visszatérítési és vitás ügyeket. Ilyenkor saját számlát nem
+	// kérünk a Checkouttól (a Stripe nem is engedi).
+	ManagedPayments bool
 	// APIBase a tesztekhez cserélhető; üresen a valódi Stripe API.
 	APIBase string
 }
+
+// StripeAPIVersion a hívásainkban küldött Stripe-Version. A webhook végpontot
+// a Stripe Dashboardon ugyanerre a verzióra kell állítani.
+const StripeAPIVersion = "2025-03-31.basil"
 
 // Stripe a Stripe Checkout + webhook alapú fizetési szolgáltató. Szándékosan
 // nem a hivatalos SDK-t használja: négy végpontot hívunk, ehhez egy nagy
@@ -97,12 +106,17 @@ func (s *Stripe) CreateCheckout(ctx context.Context, req CheckoutRequest) (strin
 		// Egyszeri fizetésnél is legyen Stripe ügyfél: a számla és a
 		// későbbi ügyfélszolgálati keresés ehhez kötődik.
 		form.Set("customer_creation", "always")
-		form.Set("invoice_creation[enabled]", "true")
+		if !s.cfg.ManagedPayments {
+			form.Set("invoice_creation[enabled]", "true")
+		}
 	} else {
 		form.Set("mode", "subscription")
 		// Az előfizetés eseményei (megújulás, lemondás) ebből tudják, kié.
 		form.Set("subscription_data[metadata][subject]", req.Subject)
 		form.Set("subscription_data[metadata][plan]", req.Plan.Key)
+	}
+	if s.cfg.ManagedPayments {
+		form.Set("managed_payments[enabled]", "true")
 	}
 	body, err := s.call(ctx, http.MethodPost, "/v1/checkout/sessions", form)
 	if err != nil {
@@ -127,6 +141,9 @@ func (s *Stripe) call(ctx context.Context, method, path string, form url.Values)
 		return nil, err
 	}
 	req.SetBasicAuth(s.cfg.SecretKey, "")
+	// Rögzített API-verzió: a fiók alapértelmezése ne változtassa meg alattunk
+	// a válaszok alakját. A Managed Payments ennél régebbin nem érhető el.
+	req.Header.Set("Stripe-Version", StripeAPIVersion)
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
