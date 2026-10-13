@@ -140,3 +140,47 @@ CREATE TABLE IF NOT EXISTS billing_events (
 CREATE INDEX IF NOT EXISTS subscriptions_external_idx
     ON subscriptions (provider, external_subscription_id)
     WHERE external_subscription_id <> '';
+
+-- AI tárca: a felhőben futó AI funkciók (beágyazás, válaszadás) Snitt AI
+-- tokenben mért egyenlege. Két forrásból töltődik, és a kettő külön él:
+--
+--   - period_tokens: a havi AI csomag kerete. Csak addig költhető, amíg az
+--     AI előfizetés aktív és a period_end még nem telt el; megújuláskor nem
+--     görgetjük át, hanem visszaáll a csomag keretére.
+--   - purchased_tokens: egyszeri tokencsomagból vett tokenek, soha nem
+--     járnak le.
+--
+-- Az AI előfizetés szándékosan NEM a subscriptions táblában él: ott
+-- felhasználónként egy élő sor lehet, és az a hozzáférést adó csomagé. Az AI
+-- csomag mellette, attól függetlenül vehető.
+CREATE TABLE IF NOT EXISTS ai_wallets (
+    subject                  TEXT PRIMARY KEY,
+    period_tokens            BIGINT NOT NULL DEFAULT 0,
+    period_end               TIMESTAMPTZ NULL,
+    purchased_tokens         BIGINT NOT NULL DEFAULT 0,
+    external_subscription_id TEXT NULL,
+    status                   TEXT NOT NULL DEFAULT '',
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- A Stripe előfizetés-események külső azonosító alapján találják meg a tárcát.
+CREATE INDEX IF NOT EXISTS ai_wallets_external_idx
+    ON ai_wallets (external_subscription_id)
+    WHERE external_subscription_id IS NOT NULL;
+
+-- AI használati napló: minden szolgáltatóhívás nyers token-adatai és a
+-- ténylegesen levont Snitt AI token. Ebből utólag is ellenőrizhető a
+-- súlytábla, és ebből látszik, mire ment el egy felhasználó egyenlege.
+CREATE TABLE IF NOT EXISTS ai_usage (
+    id             BIGSERIAL PRIMARY KEY,
+    subject        TEXT NOT NULL,
+    kind           TEXT NOT NULL,
+    model          TEXT NOT NULL DEFAULT '',
+    input_tokens   BIGINT NOT NULL DEFAULT 0,
+    output_tokens  BIGINT NOT NULL DEFAULT 0,
+    charged_tokens BIGINT NOT NULL DEFAULT 0,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT ai_usage_kind_chk CHECK (kind IN ('embed', 'answer'))
+);
+
+CREATE INDEX IF NOT EXISTS ai_usage_subject_idx ON ai_usage (subject, created_at DESC);

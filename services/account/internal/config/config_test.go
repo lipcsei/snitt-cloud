@@ -53,3 +53,25 @@ func TestLoadProductionRefusesDevValues(t *testing.T) {
 		})
 	}
 }
+
+func TestStripeAIPricesAreOptional(t *testing.T) {
+	t.Setenv("SENTRY_ENVIRONMENT", "")
+	t.Setenv("STRIPE_SECRET_KEY", "sk_test")
+	t.Setenv("STRIPE_WEBHOOK_SECRET", "whsec")
+	t.Setenv("STRIPE_PRICE_MONTHLY", "price_m")
+	t.Setenv("STRIPE_PRICE_LIFETIME", "price_l")
+	t.Setenv("STRIPE_PRICE_AI_MONTHLY", "")
+	t.Setenv("STRIPE_PRICE_AI_TOKENS", "")
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("az AI árak nélkül is indulnia kell: %v", err)
+	}
+	if c.AIEmbedModel != "voyage-4" || c.AIAnswerModel != "claude-opus-5-5" {
+		t.Errorf("AI modellek alapértéke = %q / %q", c.AIEmbedModel, c.AIAnswerModel)
+	}
+
+	t.Setenv("STRIPE_PRICE_LIFETIME", "")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "STRIPE_PRICE_LIFETIME") {
+		t.Errorf("a lifetime ára továbbra is kötelező: %v", err)
+	}
+}

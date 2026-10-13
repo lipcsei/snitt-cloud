@@ -80,6 +80,10 @@ func (s *Stripe) CancelSubscription(ctx context.Context, externalID string, atPe
 	return err
 }
 
+// Offers igaz, ha a csomaghoz van beállított Stripe ár. Az AI csomagok ára
+// opcionális: amíg nincs, a csomagot nem kínáljuk.
+func (s *Stripe) Offers(planKey string) bool { return s.cfg.PriceIDs[planKey] != "" }
+
 // CreateCheckout Stripe Checkout munkamenetet nyit, és a fizetési oldal
 // címét adja vissza. A subject a metadata-ban és a client_reference_id-ben
 // utazik: a webhook ebből tudja, kinek kell a jogosultságot kiadni.
@@ -206,6 +210,12 @@ type WebhookEvent struct {
 	CancelAtPeriodEnd bool
 }
 
+// PlanOfferer a csomagonként eltérő elérhetőséget ismerő szolgáltató: az
+// opcionális árú (AI) csomagokat csak akkor kínáljuk, ha van áruk.
+type PlanOfferer interface {
+	Offers(planKey string) bool
+}
+
 // WebhookProvider a webhookot fogadni tudó szolgáltató.
 type WebhookProvider interface {
 	CheckoutProvider
@@ -325,9 +335,18 @@ func (s *Stripe) ParseWebhook(payload []byte, header string, now time.Time) (Web
 			Currency      string `json:"currency"`
 			Parent        struct {
 				SubscriptionDetails struct {
-					Subscription string `json:"subscription"`
+					Subscription string            `json:"subscription"`
+					Metadata     map[string]string `json:"metadata"`
 				} `json:"subscription_details"`
 			} `json:"parent"`
+			Lines struct {
+				Data []struct {
+					Period struct {
+						Start int64 `json:"start"`
+						End   int64 `json:"end"`
+					} `json:"period"`
+				} `json:"data"`
+			} `json:"lines"`
 		}
 		if err := json.Unmarshal(env.Data.Object, &o); err != nil {
 			return WebhookEvent{}, fmt.Errorf("számla esemény: %w", err)
@@ -343,6 +362,16 @@ func (s *Stripe) ParseWebhook(payload []byte, header string, now time.Time) (Web
 		ev.PaymentID = o.ID
 		ev.AmountMinor = o.AmountPaid
 		ev.Currency = strings.ToUpper(o.Currency)
+		// Az előfizetés metadata-ja (subject, plan) és a számlázott időszak:
+		// az AI tárca ebből állítja vissza a havi keretet és a periódus végét.
+		ev.Subject = o.Parent.SubscriptionDetails.Metadata["subject"]
+		ev.PlanKey = o.Parent.SubscriptionDetails.Metadata["plan"]
+		if len(o.Lines.Data) > 0 {
+			p := o.Lines.Data[0].Period
+			if p.Start > 0 && p.End > p.Start {
+				ev.PeriodStart, ev.PeriodEnd = time.Unix(p.Start, 0).UTC(), time.Unix(p.End, 0).UTC()
+			}
+		}
 	}
 	return ev, nil
 }

@@ -42,6 +42,8 @@ type fakeStore struct {
 
 	// Az admin végpontok állapota külön struktúrában, lásd admin_test.go.
 	admin adminFake
+	// Az AI tárcák állapota, lásd ai_test.go.
+	wallets aiFake
 }
 
 func (f *fakeStore) Ping(context.Context) error { return f.pingErr }

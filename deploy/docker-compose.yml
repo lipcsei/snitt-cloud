@@ -80,9 +80,16 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY:-}
       STRIPE_PRICE_LIFETIME: ${STRIPE_PRICE_LIFETIME:-}
+      STRIPE_PRICE_AI_MONTHLY: ${STRIPE_PRICE_AI_MONTHLY:-}
+      STRIPE_PRICE_AI_TOKENS: ${STRIPE_PRICE_AI_TOKENS:-}
       STRIPE_MANAGED_PAYMENTS: ${STRIPE_MANAGED_PAYMENTS:-true}
       CHECKOUT_SUCCESS_URL: ${CHECKOUT_SUCCESS_URL:-https://snitt.video/fiok?fizetes=sikeres}
       CHECKOUT_CANCEL_URL: ${CHECKOUT_CANCEL_URL:-https://snitt.video/fiok?fizetes=megszakitva}
+      # Felhős AI funkciók (Snitt AI token). Üres kulcs = az adott végpont 503.
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_EMBED_MODEL: ${AI_EMBED_MODEL:-voyage-4}
+      AI_ANSWER_MODEL: ${AI_ANSWER_MODEL:-claude-opus-5-5}
     ports:
       - "8090:8090"
     depends_on:
