@@ -86,6 +86,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'entitlement.revoke': 'Jogosultság visszavonva',
   'user.enable': 'Fiók engedélyezve',
   'user.disable': 'Fiók letiltva',
+  'ai.tokens_credit': 'AI tokenek jóváírva',
+  'ai.subscription': 'AI csomag változás',
 };
 
 export function auditActionLabel(action: string): string {

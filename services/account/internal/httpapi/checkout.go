@@ -32,17 +32,30 @@ type publicPlan struct {
 	Description string `json:"description"`
 	PriceMinor  int64  `json:"price_minor"`
 	Lifetime    bool   `json:"lifetime"`
+	// Kind: "access" (hozzáférést adó előfizetés) vagy "ai" (AI tokencsomag).
+	Kind string `json:"kind"`
+	// AITokens AI csomagnál a csomag tokenkerete (havi csomagnál
+	// periódusonként), egyébként 0.
+	AITokens int64 `json:"ai_tokens"`
 }
 
 // handlePublicPlans az önkiszolgálóan megvehető csomagok - a desktop app
-// fizetési képernyője ebből mutat árat. Nyilvános: árakat bárki láthat.
+// fizetési képernyője ebből mutat árat. Nyilvános: árakat bárki láthat. Az
+// AI csomagok csak akkor szerepelnek, ha van hozzájuk beállított ár.
 func (a *API) handlePublicPlans(w http.ResponseWriter, _ *http.Request) {
 	out := []publicPlan{}
-	for _, p := range billing.Plans() {
-		if !p.SelfService {
+	for _, p := range billing.AllPlans() {
+		if !p.SelfService || (p.IsAI() && !a.offers(p)) {
 			continue
 		}
-		out = append(out, publicPlan{Key: p.Key, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor, Lifetime: p.Lifetime})
+		kind := "access"
+		if p.IsAI() {
+			kind = billing.KindAI
+		}
+		out = append(out, publicPlan{
+			Key: p.Key, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor,
+			Lifetime: p.Lifetime, Kind: kind, AITokens: p.AITokens,
+		})
 	}
 	_, checkout := a.billing.(billing.CheckoutProvider)
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -50,6 +63,13 @@ func (a *API) handlePublicPlans(w http.ResponseWriter, _ *http.Request) {
 		"currency":         a.currency,
 		"checkout_enabled": checkout,
 	})
+}
+
+// offers igaz, ha a fizetési szolgáltató a csomagot ténylegesen árulja. A
+// csomagonkénti elérhetőséget nem ismerő szolgáltatónál (Manual) hamis.
+func (a *API) offers(p billing.Plan) bool {
+	o, ok := a.billing.(billing.PlanOfferer)
+	return ok && o.Offers(p.Key)
 }
 
 type checkoutRequest struct {
@@ -71,21 +91,27 @@ func (a *API) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	plan, ok := billing.LookupPlan(req.Plan)
+	plan, ok := billing.LookupAnyPlan(req.Plan)
 	if !ok || !plan.SelfService {
 		writeError(w, http.StatusBadRequest, "ez a csomag nem vásárolható meg: "+req.Plan)
 		return
 	}
-	// Egy felhasználónak egyszerre egy élő előfizetése lehet: aki már
-	// fizet, ne fizessen kétszer (a csomagváltás egyelőre az ügyfélszolgálaton megy).
-	live, err := a.store.LiveSubscriptionsBySubjects(r.Context(), []string{id.Subject})
-	if err != nil {
-		serverError(w, r, err, http.StatusInternalServerError, "az előfizetés állapota nem elérhető")
-		return
-	}
-	if cur, has := live[id.Subject]; has {
-		writeError(w, http.StatusConflict, "már van élő előfizetésed ("+cur.Plan+")")
-		return
+	if plan.IsAI() {
+		if !a.checkAICheckout(w, r, id.Subject, plan) {
+			return
+		}
+	} else {
+		// Egy felhasználónak egyszerre egy élő előfizetése lehet: aki már
+		// fizet, ne fizessen kétszer (a csomagváltás egyelőre az ügyfélszolgálaton megy).
+		live, err := a.store.LiveSubscriptionsBySubjects(r.Context(), []string{id.Subject})
+		if err != nil {
+			serverError(w, r, err, http.StatusInternalServerError, "az előfizetés állapota nem elérhető")
+			return
+		}
+		if cur, has := live[id.Subject]; has {
+			writeError(w, http.StatusConflict, "már van élő előfizetésed ("+cur.Plan+")")
+			return
+		}
 	}
 	// Az első hívás itt is létrehozza a profilt, ha a felhasználó még
 	// sosem nyitotta meg a landinget - a webhook már létező profilt talál.
@@ -106,6 +132,39 @@ func (a *API) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+// checkAICheckout az AI csomag vásárlásának feltételei. Az AI csomag nem
+// számít bele az "egy élő előfizetés" szabályba (a hozzáférési csomag mellé
+// is megvehető), a havi AI csomagból viszont egyszerre csak egy futhat. A
+// tokencsomag bármikor, akárhányszor megvehető.
+func (a *API) checkAICheckout(w http.ResponseWriter, r *http.Request, subject string, plan billing.Plan) bool {
+	if !a.offers(plan) {
+		writeError(w, http.StatusNotImplemented, "ez az AI csomag még nem vásárolható meg")
+		return false
+	}
+	if plan.Lifetime {
+		return true
+	}
+	wallet, err := a.store.AIWallet(r.Context(), subject)
+	if err != nil {
+		serverError(w, r, err, http.StatusInternalServerError, "az AI egyenleg nem elérhető")
+		return false
+	}
+	if aiSubscriptionLive(wallet, time.Now()) {
+		writeError(w, http.StatusConflict, "már van aktív AI csomagod")
+		return false
+	}
+	return true
+}
+
+// aiSubscriptionLive igaz, ha a tárca havi AI előfizetése még él a
+// szolgáltatónál (aktív vagy késedelmes, és a periódus nem járt le).
+func aiSubscriptionLive(w store.AIWallet, now time.Time) bool {
+	if w.Status != store.SubActive && w.Status != store.SubPastDue {
+		return false
+	}
+	return w.PeriodEnd != nil && w.PeriodEnd.After(now)
 }
 
 // handleBillingWebhook a fizetési szolgáltató eseményeit dolgozza fel. Nincs
@@ -172,6 +231,9 @@ func (a *API) handleBillingWebhook(w http.ResponseWriter, r *http.Request) {
 // applyCheckoutCompleted a sikeres fizetés után kiadja az előfizetést (vagy
 // a lifetime hozzáférést) és rögzíti a kifizetett számlát.
 func (a *API) applyCheckoutCompleted(ctx context.Context, provider string, ev billing.WebhookEvent) error {
+	if p, ok := billing.LookupAnyPlan(ev.PlanKey); ok && p.IsAI() {
+		return a.applyAICheckout(ctx, provider, p, ev)
+	}
 	plan, ok := billing.LookupPlan(ev.PlanKey)
 	if !ok || ev.Subject == "" {
 		return fmt.Errorf("a checkout eseményből hiányzik a csomag vagy a felhasználó (plan=%q)", ev.PlanKey)
@@ -223,6 +285,9 @@ func (a *API) applyCheckoutCompleted(ctx context.Context, provider string, ev bi
 // applySubscriptionUpdate a szolgáltató szerinti állapotra hozza az
 // előfizetést (megújulás, lemondás, sikertelen terhelés).
 func (a *API) applySubscriptionUpdate(ctx context.Context, provider string, ev billing.WebhookEvent) error {
+	if handled, err := a.applyAISubscriptionUpdate(ctx, ev); handled {
+		return err
+	}
 	sub, err := a.store.SubscriptionByExternalID(ctx, provider, ev.SubscriptionID)
 	if errors.Is(err, store.ErrNotFound) {
 		// A Stripe nem garantál sorrendet: ez megelőzhette a checkout
@@ -271,6 +336,9 @@ func (a *API) applySubscriptionUpdate(ctx context.Context, provider string, ev b
 
 // applyInvoicePaid a megújulási terhelést veszi fel a saját számlakönyvbe.
 func (a *API) applyInvoicePaid(ctx context.Context, provider string, ev billing.WebhookEvent) error {
+	if handled, err := a.applyAIInvoicePaid(ctx, provider, ev); handled {
+		return err
+	}
 	sub, err := a.store.SubscriptionByExternalID(ctx, provider, ev.SubscriptionID)
 	if err != nil {
 		return fmt.Errorf("megújulási számla előfizetése (%s): %w", ev.SubscriptionID, err)
@@ -283,12 +351,18 @@ func (a *API) applyInvoicePaid(ctx context.Context, provider string, ev billing.
 }
 
 func (a *API) recordPaidInvoice(ctx context.Context, provider string, sub store.Subscription, amount int64, currency, paymentID, note string) error {
+	return a.recordPaidInvoiceFor(ctx, provider, sub.Subject, &sub.ID, amount, currency, paymentID, note)
+}
+
+// recordPaidInvoiceFor kifizetett számlát rögzít; a subscriptionID nil az
+// AI csomagoknál, amiknek nincs subscriptions soruk.
+func (a *API) recordPaidInvoiceFor(ctx context.Context, provider, subject string, subscriptionID *string, amount int64, currency, paymentID, note string) error {
 	if amount <= 0 {
 		return nil
 	}
 	inv, err := a.store.CreateInvoice(ctx, store.NewInvoice{
-		Subject:        sub.Subject,
-		SubscriptionID: &sub.ID,
+		Subject:        subject,
+		SubscriptionID: subscriptionID,
 		AmountMinor:    amount,
 		Currency:       strings.ToUpper(currency),
 		Provider:       provider,
@@ -311,4 +385,142 @@ func (a *API) systemAudit(ctx context.Context, e store.NewAuditEntry) {
 	if _, err := a.store.RecordAudit(ctx, e); err != nil {
 		a.log.ErrorContext(ctx, "napló írása sikertelen", "error", err, "action", e.Action, "target_id", e.TargetID)
 	}
+}
+
+// ---------- AI csomagok a webhookban ----------
+
+// aiProvisionalPeriodEnd a havi AI csomag ideiglenes periódusának vége a checkout után:
+// a pontos időszakot a customer.subscription.updated esemény hozza, addig a
+// keret azonnal éljen. A két nap ráhagyás a megújulási terhelés csúszására.
+func aiProvisionalPeriodEnd(now time.Time) time.Time {
+	return now.AddDate(0, 1, 2)
+}
+
+// applyAICheckout a sikeres AI vásárlás: tokencsomagnál jóváírja a
+// tokeneket, havi AI csomagnál elindítja a tárca előfizetését. A
+// subscriptions táblát és a jogosultságokat nem érinti.
+func (a *API) applyAICheckout(ctx context.Context, provider string, plan billing.Plan, ev billing.WebhookEvent) error {
+	if ev.Subject == "" {
+		return fmt.Errorf("az AI checkout eseményből hiányzik a felhasználó (plan=%q)", plan.Key)
+	}
+	currency := ev.Currency
+	if currency == "" {
+		currency = a.currency
+	}
+	if plan.Lifetime {
+		w, err := a.store.CreditAITokens(ctx, ev.Subject, plan.AITokens)
+		if err != nil {
+			return fmt.Errorf("AI tokenek jóváírása fizetés után: %w", err)
+		}
+		a.systemAudit(ctx, store.NewAuditEntry{
+			Action:     store.AuditAITokensCredit,
+			TargetType: "ai_wallet",
+			TargetID:   ev.Subject,
+			Subject:    ev.Subject,
+			Summary:    fmt.Sprintf("Online vásárlás: %s, %d AI token jóváírva, %s.", plan.Name, plan.AITokens, moneyText(ev.AmountMinor, currency)),
+			Detail:     map[string]any{"plan": plan.Key, "event": ev.ID, "provider": provider, "tokens": plan.AITokens, "purchased_tokens": w.PurchasedTokens},
+		})
+		// A jóváírás már megtörtént: ha most hibát adnánk, a Stripe újraküldené
+		// az eseményt, és a tokenek kétszer kerülnének a tárcába. A számla
+		// rögzítésének hibája ezért csak naplóba megy (a Stripe-ban megvan).
+		if err := a.recordPaidInvoiceFor(ctx, provider, ev.Subject, nil, ev.AmountMinor, currency, ev.PaymentID, "Online fizetés: "+plan.Name+"."); err != nil {
+			a.log.ErrorContext(ctx, "AI tokencsomag számlájának rögzítése sikertelen", "error", err, "subject", ev.Subject, "event", ev.ID)
+		}
+		return nil
+	}
+
+	if ev.SubscriptionID == "" {
+		return fmt.Errorf("a havi AI csomag checkout eseményéből hiányzik az előfizetés")
+	}
+	// Újraküldött esemény, aminek a rögzítése korábban elveszett.
+	if w, err := a.store.AIWalletByExternalSubscription(ctx, ev.SubscriptionID); err == nil && w.Subject == ev.Subject {
+		return nil
+	}
+	end := aiProvisionalPeriodEnd(time.Now().UTC())
+	if _, err := a.store.SetAISubscription(ctx, ev.Subject, store.AISubscription{
+		ExternalSubscriptionID: ev.SubscriptionID,
+		Status:                 store.SubActive,
+		PeriodTokens:           plan.AITokens,
+		PeriodEnd:              end,
+	}); err != nil {
+		return fmt.Errorf("AI előfizetés indítása fizetés után: %w", err)
+	}
+	a.systemAudit(ctx, store.NewAuditEntry{
+		Action:     store.AuditAISubscription,
+		TargetType: "ai_wallet",
+		TargetID:   ev.Subject,
+		Subject:    ev.Subject,
+		Summary:    fmt.Sprintf("Online vásárlás: %s, havi %d AI token, %s.", plan.Name, plan.AITokens, moneyText(ev.AmountMinor, currency)),
+		Detail:     map[string]any{"plan": plan.Key, "event": ev.ID, "provider": provider, "external_subscription_id": ev.SubscriptionID, "period_end": end},
+	})
+	return a.recordPaidInvoiceFor(ctx, provider, ev.Subject, nil, ev.AmountMinor, currency, ev.PaymentID, "Online fizetés: "+plan.Name+".")
+}
+
+// applyAISubscriptionUpdate a havi AI csomag Stripe előfizetésének
+// változását vezeti át a tárcán. A handled hamis, ha az azonosító nem AI
+// tárcáé - ilyenkor a hívó a subscriptions táblában keres tovább.
+func (a *API) applyAISubscriptionUpdate(ctx context.Context, ev billing.WebhookEvent) (handled bool, err error) {
+	w, err := a.store.AIWalletByExternalSubscription(ctx, ev.SubscriptionID)
+	if errors.Is(err, store.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return true, err
+	}
+	upd := store.AISubscriptionUpdate{Status: ev.Status}
+	if !ev.PeriodEnd.IsZero() {
+		end := ev.PeriodEnd
+		upd.PeriodEnd = &end
+	}
+	if ev.Kind == billing.WebhookSubscriptionDeleted {
+		// Megszűnéskor a maradék havi keret elvész; a vásárolt tokenek maradnak.
+		zero := int64(0)
+		upd.Status, upd.PeriodTokens = store.SubCanceled, &zero
+	}
+	if _, err := a.store.UpdateAISubscription(ctx, ev.SubscriptionID, upd); err != nil {
+		return true, fmt.Errorf("AI előfizetés frissítése: %w", err)
+	}
+	if ev.Kind == billing.WebhookSubscriptionDeleted {
+		a.systemAudit(ctx, store.NewAuditEntry{
+			Action:     store.AuditAISubscription,
+			TargetType: "ai_wallet",
+			TargetID:   w.Subject,
+			Subject:    w.Subject,
+			Summary:    "Az AI csomag megszűnt a fizetési szolgáltatónál.",
+			Detail:     map[string]any{"event": ev.ID, "external_subscription_id": ev.SubscriptionID},
+		})
+	}
+	return true, nil
+}
+
+// applyAIInvoicePaid a havi AI csomag megújulása: a keret visszaáll a
+// csomag teljes keretére (a maradék nem görgetődik át), és a terhelés
+// bekerül a számlakönyvbe.
+func (a *API) applyAIInvoicePaid(ctx context.Context, provider string, ev billing.WebhookEvent) (handled bool, err error) {
+	w, err := a.store.AIWalletByExternalSubscription(ctx, ev.SubscriptionID)
+	if errors.Is(err, store.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return true, err
+	}
+	plan, ok := billing.LookupAnyPlan(ev.PlanKey)
+	if !ok || !plan.IsAI() || plan.Lifetime {
+		// Régebbi előfizetés metadata nélkül: csak egy havi AI csomag van.
+		plan, _ = billing.LookupAnyPlan("ai_monthly")
+	}
+	tokens := plan.AITokens
+	upd := store.AISubscriptionUpdate{Status: store.SubActive, PeriodTokens: &tokens}
+	if !ev.PeriodEnd.IsZero() {
+		end := ev.PeriodEnd
+		upd.PeriodEnd = &end
+	}
+	if _, err := a.store.UpdateAISubscription(ctx, ev.SubscriptionID, upd); err != nil {
+		return true, fmt.Errorf("AI keret megújítása: %w", err)
+	}
+	currency := ev.Currency
+	if currency == "" {
+		currency = a.currency
+	}
+	return true, a.recordPaidInvoiceFor(ctx, provider, w.Subject, nil, ev.AmountMinor, currency, ev.PaymentID, "Megújulás: "+plan.Name+".")
 }

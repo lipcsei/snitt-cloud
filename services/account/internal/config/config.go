@@ -42,7 +42,20 @@ type Config struct {
 	StripeManagedPayments bool
 	CheckoutSuccessURL    string
 	CheckoutCancelURL     string
+
+	// Felhős AI funkciók (Snitt AI tokenből fizetve). Mindkét kulcs
+	// opcionális: üres kulcsnál az adott végpont 503-at ad.
+	// VoyageAPIKey: beágyazások (Voyage AI), AnthropicAPIKey: válaszok (Claude).
+	VoyageAPIKey    string
+	AnthropicAPIKey string
+	AIEmbedModel    string
+	AIAnswerModel   string
 }
+
+// requiredStripePrices a csomagok, amikhez bekapcsolt Stripe mellett
+// kötelező az ár. Az AI csomagok (ai_monthly, ai_tokens) ára opcionális:
+// amíg nincs beállítva, a csomag egyszerűen nem vásárolható.
+var requiredStripePrices = []string{"monthly", "lifetime"}
 
 // StripeEnabled igaz, ha az online fizetés be van kapcsolva.
 func (c Config) StripeEnabled() bool { return c.StripeSecretKey != "" }
@@ -75,10 +88,18 @@ func Load() (Config, error) {
 		StripePrices: map[string]string{
 			"monthly":  env("STRIPE_PRICE_MONTHLY", ""),
 			"lifetime": env("STRIPE_PRICE_LIFETIME", ""),
+			// Opcionális: lásd requiredStripePrices.
+			"ai_monthly": env("STRIPE_PRICE_AI_MONTHLY", ""),
+			"ai_tokens":  env("STRIPE_PRICE_AI_TOKENS", ""),
 		},
 		StripeManagedPayments: env("STRIPE_MANAGED_PAYMENTS", "true") != "false",
 		CheckoutSuccessURL:    env("CHECKOUT_SUCCESS_URL", "https://snitt.video/fiok?fizetes=sikeres"),
 		CheckoutCancelURL:     env("CHECKOUT_CANCEL_URL", "https://snitt.video/fiok?fizetes=megszakitva"),
+
+		VoyageAPIKey:    env("VOYAGE_API_KEY", ""),
+		AnthropicAPIKey: env("ANTHROPIC_API_KEY", ""),
+		AIEmbedModel:    env("AI_EMBED_MODEL", "voyage-4"),
+		AIAnswerModel:   env("AI_ANSWER_MODEL", "claude-opus-5-5"),
 	}
 	// Containeren belül a Keycloak más hosztnéven érhető el ("keycloak"), mint
 	// ahogy a tokenek issuer claimje szól ("localhost"). Alapból a kettő azonos.
@@ -100,8 +121,8 @@ func Load() (Config, error) {
 		if c.StripeWebhookSecret == "" {
 			return Config{}, fmt.Errorf("STRIPE_WEBHOOK_SECRET kötelező, ha a STRIPE_SECRET_KEY be van állítva")
 		}
-		for plan, price := range c.StripePrices {
-			if price == "" {
+		for _, plan := range requiredStripePrices {
+			if c.StripePrices[plan] == "" {
 				return Config{}, fmt.Errorf("a(z) %s csomag Stripe ára hiányzik (STRIPE_PRICE_%s)", plan, strings.ToUpper(plan))
 			}
 		}

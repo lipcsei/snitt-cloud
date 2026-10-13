@@ -69,6 +69,12 @@ A handler-tesztekhez nem kell sem élő Keycloak, sem adatbázis: a token-ellen�
 | `SENTRY_DSN` | *(üres)* | Opcionális hibajelentés a GlitchTipbe (a projekt *Client Keys (DSN)* oldaláról). **Üresen teljesen kikapcsolva**: az SDK el sem indul. Composeban a `SENTRY_DSN_ACCOUNT`-ból jön. |
 | `SENTRY_ENVIRONMENT` | `development` | A környezet neve az eseményeken (az éles compose `production`-t állít). |
 | `SENTRY_RELEASE` | *(üres)* | A kiadás azonosítója az eseményeken (opcionális). |
+| `STRIPE_PRICE_AI_MONTHLY` | *(üres)* | Opcionális: a havi AI csomag ismétlődő Stripe ára. Üresen a csomag nem vásárolható. |
+| `STRIPE_PRICE_AI_TOKENS` | *(üres)* | Opcionális: az AI tokencsomag egyszeri Stripe ára. Üresen a csomag nem vásárolható. |
+| `VOYAGE_API_KEY` | *(üres)* | Voyage AI kulcs a beágyazásokhoz. Üresen a `POST /api/v1/ai/embed` `503`. |
+| `ANTHROPIC_API_KEY` | *(üres)* | Anthropic API kulcs a válaszokhoz. Üresen a `POST /api/v1/ai/answer` `503`. |
+| `AI_EMBED_MODEL` | `voyage-4` | A beágyazó modell (1024 dimenzió). |
+| `AI_ANSWER_MODEL` | `claude-opus-5-5` | A válaszadó Claude modell. |
 
 Hibajelentéskor a handlerben keletkező pánik (stacktrace-szel) és minden visszaadott `5xx` válasz
 egy-egy eseményt ad; a `4xx`-et nem jelenti. Személyes adat, kérés törzse és lekérdezés-szöveg nem
@@ -139,6 +145,59 @@ A hívó le nem járt jogosultságai. **Az üres lista normál válasz, nem hiba
 A válasz szándékosan objektum, nem csupasz tömb: így később bővíthető a kliensek törése nélkül.
 Jogosultságot az előfizetés kiadása ad ki automatikusan (a csomag `feature_keys` mezője
 szerint), a csomagon kívülieket pedig az admin, kézzel – lásd a következő végpontot.
+
+### AI végpontok (Snitt AI token)
+
+Az egyenleg, a csomagok és a mérés leírása: [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md),
+„AI tárca” fejezet. Hibák: `400` érvénytelen kérés, `402` elfogyott az egyenleg
+(`{"error": "Elfogytak az AI tokenjeid. …"}`), `502` a szolgáltató hibája vagy visszautasítás,
+`503` a szolgáltató nincs bekapcsolva.
+
+`GET /api/v1/ai/balance`
+
+```json
+{
+  "enabled": true,
+  "embed_enabled": true,
+  "answer_enabled": true,
+  "period_tokens": 812345,
+  "period_end": "2026-11-13T10:00:00Z",
+  "purchased_tokens": 500000,
+  "total_tokens": 1312345,
+  "subscription_active": true
+}
+```
+
+A `period_tokens` a most költhető havi keret (lejárt vagy lemondott csomagnál `0`), a
+`period_end` `null`, ha sosem volt AI csomag.
+
+`POST /api/v1/ai/embed` – kérés: `{"texts": ["…"], "input_type": "query" | "document"}`
+(1–128 szöveg, egyenként legfeljebb 8000 karakter).
+
+```json
+{ "embeddings": [[0.012, -0.034, …]], "model": "voyage-4", "dims": 1024, "charged_tokens": 3, "total_tokens": 1312342 }
+```
+
+`POST /api/v1/ai/answer` – kérés:
+
+```json
+{
+  "question": "Hogyan főzzem a rizst?",
+  "language": "hu",
+  "passages": [
+    { "id": "v1:12", "video_title": "Főzés alapok", "start_ms": 83500, "text": "…" }
+  ]
+}
+```
+
+(`question` 2–1000 karakter, `language` opcionális, 1–40 részlet, a szövegek összesen legfeljebb
+60 000 karakter.) Válasz:
+
+```json
+{ "answer": "Előbb mosd meg [1] …", "cited_ids": ["v1:12"], "model": "claude-opus-5-5", "charged_tokens": 2150, "total_tokens": 1310192 }
+```
+
+A `cited_ids` a válasz `[n]` jelöléseiből jön, előfordulási sorrendben, ismétlés nélkül.
 
 ### `POST /api/v1/admin/users/{subject}/entitlements`
 
@@ -226,4 +285,6 @@ internal/auth             OIDC token-ellenőrzés + middleware (TokenVerifier in
 internal/store            pgxpool, beágyazott schema.sql, lekérdezések
 internal/httpapi          routing, handlerek, CORS, admin napló, tesztek
 internal/errtrack         opcionális hibajelentés (Sentry SDK): pánik és 5xx
+internal/billing          csomagok, Stripe Checkout és webhook
+internal/ai               AI szolgáltatók (Voyage beágyazás, Claude válasz) és a token-mérés
 ```

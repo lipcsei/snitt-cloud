@@ -31,6 +31,12 @@ import (
 // csomag tartalmazza.
 const FeatureAppAccess = "snitt-app-access"
 
+// KindAI az AI tokencsomagok fajtája. Az AI csomag nem előfizetés a
+// subscriptions tábla értelmében: nem ad entitlementet, nem foglalja el a
+// felhasználó egyetlen élő előfizetésének helyét, hanem az AI tárcát
+// (ai_wallets) tölti fel. A kettő függetlenül vehető.
+const KindAI = "ai"
+
 // Plan egy megvásárolható csomag. A FeatureKeys pontosan azok az
 // entitlementek, amiket az aktív előfizetés a desktop appban felold.
 type Plan struct {
@@ -47,7 +53,17 @@ type Plan struct {
 	// SelfService: a felhasználó maga is megveheti (checkout). A többi csomagot
 	// ma csak az admin adhatja ki.
 	SelfService bool `json:"self_service"`
+	// Kind a csomag fajtája: üres a hozzáférést adó előfizetéseknél, KindAI
+	// az AI tokencsomagoknál.
+	Kind string `json:"kind"`
+	// AITokens AI csomagnál: ennyi Snitt AI tokent ad. Havi AI csomagnál
+	// elszámolási periódusonként ennyi a keret (nem görgetjük át), egyszeri
+	// tokencsomagnál ennyi kerül a soha le nem járó vásárolt egyenlegre.
+	AITokens int64 `json:"ai_tokens"`
 }
+
+// IsAI igaz, ha a csomag az AI tárcát tölti, nem előfizetést ad.
+func (p Plan) IsAI() bool { return p.Kind == KindAI }
 
 // lifetimeYears: ennyi évre nyitunk periódust a lifetime csomagnak. A séma a
 // periódus végét kötelezővé teszi; a "soha" helyett egy elérhetetlen dátum
@@ -106,20 +122,76 @@ var plans = map[string]Plan{
 		PriceMinor:  799000, // 7 990 Ft
 		FeatureKeys: []string{FeatureAppAccess, "ai-semantic-search", "ai-video-understanding"},
 	},
+	// Az AI csomagok a felhőben futó AI funkciókat (szemantikus keresés
+	// beágyazással, válasz a saját videótárból) fizetik. A Lifetime itt az
+	// egyszeri fizetést jelöli (mode=payment), nem örök periódust.
+	"ai_monthly": {
+		Key:         "ai_monthly",
+		Name:        "AI csomag",
+		Description: "Havi 1 000 000 Snitt AI token okos kereséshez és válaszokhoz a saját videótáradból.",
+		PriceMinor:  299000, // 2 990 Ft / hó
+		SelfService: true,
+		Kind:        KindAI,
+		AITokens:    1_000_000,
+	},
+	"ai_tokens": {
+		Key:         "ai_tokens",
+		Name:        "AI tokencsomag",
+		Description: "500 000 Snitt AI token egyszeri díjért, lejárat nélkül.",
+		PriceMinor:  199000, // 1 990 Ft egyszeri
+		Lifetime:    true,
+		SelfService: true,
+		Kind:        KindAI,
+		AITokens:    500_000,
+	},
 }
 
-// Plans a választható csomagok, kulcs szerint rendezve.
+// Plans az előfizetésként kiadható (hozzáférést adó) csomagok, ár szerint
+// rendezve. Az AI csomagok nincsenek benne: azokat az admin nem adhatja ki
+// előfizetésként, lásd AllPlans.
 func Plans() []Plan {
+	out := make([]Plan, 0, len(plans))
+	for _, p := range plans {
+		if !p.IsAI() {
+			out = append(out, p)
+		}
+	}
+	sortPlans(out)
+	return out
+}
+
+// AllPlans minden csomag, az AI csomagokkal együtt, ár szerint rendezve.
+func AllPlans() []Plan {
 	out := make([]Plan, 0, len(plans))
 	for _, p := range plans {
 		out = append(out, p)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].PriceMinor < out[j].PriceMinor })
+	sortPlans(out)
 	return out
 }
 
-// LookupPlan a csomag kulcs alapján.
+func sortPlans(out []Plan) {
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].PriceMinor != out[j].PriceMinor {
+			return out[i].PriceMinor < out[j].PriceMinor
+		}
+		return out[i].Key < out[j].Key
+	})
+}
+
+// LookupPlan az előfizetésként kiadható csomag kulcs alapján. AI csomagra
+// nem talál: így az előfizetést kezelő kódutak (admin kiadás, csomagváltás,
+// webhook szinkron) sosem írhatnak AI csomagot a subscriptions táblába.
 func LookupPlan(key string) (Plan, bool) {
+	p, ok := plans[key]
+	if !ok || p.IsAI() {
+		return Plan{}, false
+	}
+	return p, true
+}
+
+// LookupAnyPlan bármely csomag kulcs alapján, az AI csomagokat is beleértve.
+func LookupAnyPlan(key string) (Plan, bool) {
 	p, ok := plans[key]
 	return p, ok
 }

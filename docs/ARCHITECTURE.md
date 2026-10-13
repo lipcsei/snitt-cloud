@@ -161,7 +161,72 @@ küld (a webhook végpontot is erre a verzióra kell állítani). A Stripe term�
 `invoices` táblába írt összeg ennek megfelelően bruttó, a könyvelési bizonylat a Stripe-é.
 
 A `GET /api/v1/plans` nyilvános: a desktop app fizetési képernyője ebből mutat árat, és azt is
-megmondja, be van-e kapcsolva az online fizetés (`checkout_enabled`).
+megmondja, be van-e kapcsolva az online fizetés (`checkout_enabled`). Csomagonként a `kind` mező
+`access` (hozzáférést adó csomag) vagy `ai` (AI tokencsomag, lásd lent), az `ai_tokens` pedig az
+AI csomag tokenkerete (egyébként `0`).
+
+## AI tárca: Snitt AI token
+
+Az okos keresés és a válaszadás a saját videótárból felhős AI-t használ, aminek valódi
+önköltsége van. Ezt nem a hozzáférési csomagba építjük be, hanem **Snitt AI tokenben** adjuk
+el, egy külön tárcából (`ai_wallets`). A videók és az átiratok továbbra sem kerülnek
+szerverre: a desktop app helyben indexel, és hívásonként csak a beágyazandó szövegeket, illetve
+a kérdést és a helyben megtalált részleteket küldi fel. Ezeket nem tároljuk, csak a
+tokenszámokat (`ai_usage`).
+
+| Csomag | Ár | Fajta | Tokenek |
+|---|---|---|---|
+| `ai_monthly` (AI csomag) | 2 990 Ft / hó | ismétlődő Stripe előfizetés | 1 000 000 / periódus, nem görgetődik át |
+| `ai_tokens` (AI tokencsomag) | 1 990 Ft | egyszeri (`mode=payment`) | 500 000, soha nem jár le |
+
+- Az AI csomag **nem** `subscriptions` sor, és nem ad entitlementet: a „legfeljebb egy élő
+  előfizetés” szabály a hozzáférési csomagé, az AI csomag mellette, attól függetlenül vehető.
+  Az admin előfizetés-kezelése (kiadás, csomagváltás) az AI csomagokat nem ismeri
+  (`billing.LookupPlan` nem találja őket; a teljes lista a `billing.AllPlans`).
+- A tárcának két egyenlege van: a **havi keret** (`period_tokens`, csak aktív AI előfizetésnél
+  és a `period_end` előtt költhető; megújuláskor visszaáll a teljes keretre) és a **vásárolt**
+  egyenleg (`purchased_tokens`, nem jár le). Levonáskor előbb a havi keret fogy (az úgyis
+  elveszne), aztán a vásárolt. A levonás `SELECT … FOR UPDATE` alatt, egy tranzakcióban fut a
+  használati napló írásával.
+- Egyenleg-ellenőrzés a hívás előtt (0 → `402`), levonás a hívás után a ténylegesen
+  elszámolt tokenek szerint. Az utolsó kérés így kicsit túlköltheti a maradékot: az egyenleg
+  ilyenkor 0-n áll meg, a különbözetet elnyeljük.
+- Az árak (`STRIPE_PRICE_AI_MONTHLY`, `STRIPE_PRICE_AI_TOKENS`) opcionálisak: ár nélkül a
+  csomag nem jelenik meg a `GET /api/v1/plans`-ban, és a checkout `501`-et ad rá.
+
+**Webhook.** A checkout esemény metadata-jában utazó csomagkulcs dönt: `ai_tokens` → jóváírás a
+vásárolt egyenlegre; `ai_monthly` → a tárca AI előfizetése aktív, a keret teljes, a periódus
+vége ideiglenesen most + 1 hónap + 2 nap (a pontosat a `customer.subscription.updated` hozza).
+Az előfizetés-eseményeknél (`customer.subscription.updated/deleted`, `invoice.paid`) előbb az AI
+tárcák közt keressük a külső azonosítót, és csak ha ott nincs, akkor a `subscriptions` táblában;
+ha egyik sem ismeri, marad az `5xx` és a Stripe újrapróbálkozása. Megszűnéskor a havi keret
+nullázódik, a vásárolt tokenek megmaradnak. A kifizetett számla minden esetben bekerül az
+`invoices` táblába (előfizetés-hivatkozás nélkül), a művelet pedig a naplóba
+(`ai.tokens_credit`, `ai.subscription`).
+
+**Mérés.** 1 Snitt AI token ≈ 1 Claude Opus 5.5 bemeneti token. A levonás
+`ceil(bemenet * w_be + kimenet * w_ki)`, legalább 1, ha bármennyi token fogyott:
+
+| Modell | `w_be` | `w_ki` |
+|---|---|---|
+| `claude-opus-5-5` (alapértelmezett válaszadó) | 1 | 5 |
+| `claude-sonnet-5-5` | 0,5 | 2,5 |
+| `claude-haiku-5-5` | 0,025 | 0,125 |
+| `voyage-4` (alapértelmezett beágyazó) | 0,02 | 0 |
+| bármi más | 1 | 5 (az Opus súlya) |
+
+**Végpontok** (mind bejelentkezett felhasználónak, `internal/httpapi/ai.go`):
+
+- `GET /api/v1/ai/balance` – egyenleg és hogy be van-e kapcsolva az AI.
+- `POST /api/v1/ai/embed` – beágyazás a Voyage AI-jal (`voyage-4`, 1024 dimenzió); 1–128
+  szöveg, egyenként legfeljebb 8000 karakter, `input_type`: `query` vagy `document`.
+- `POST /api/v1/ai/answer` – rövid, forrásolt válasz Claude-dal (hivatalos Anthropic Go SDK,
+  alacsony erőfeszítés). A modell csak a számozott részletekből válaszolhat, `[n]` jelöléssel
+  hivatkozik; ezekből lesz a `cited_ids`. Ha a modell visszautasítja a kérdést, `502`, de a
+  felhasznált tokeneket levonjuk.
+
+Bármelyik szolgáltató kulcsa hiányozhat (`VOYAGE_API_KEY`, `ANTHROPIC_API_KEY`): ilyenkor az
+adott végpont `503`. A válaszok pontos alakja a `services/account/README.md`-ben van.
 
 ## A desktop app jövőbeli belépése
 

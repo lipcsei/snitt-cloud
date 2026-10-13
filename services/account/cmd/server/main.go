@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lipcsei/snitt-cloud/services/account/internal/ai"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/auth"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/billing"
 	"github.com/lipcsei/snitt-cloud/services/account/internal/config"
@@ -93,6 +94,21 @@ func run(log *slog.Logger) error {
 		log.Info("online fizetés bekapcsolva", "provider", provider.Name(), "managed_payments", cfg.StripeManagedPayments)
 	}
 
+	// Felhős AI funkciók: mindkét szolgáltató opcionális, kulcs nélkül az
+	// adott végpont 503-at ad. A nil interfészérték itt szándékos: típusos
+	// nil pointer nem kerülhet az Options-be.
+	var embedder httpapi.Embedder
+	if cfg.VoyageAPIKey != "" {
+		embedder = ai.NewVoyage(ai.VoyageConfig{APIKey: cfg.VoyageAPIKey, Model: cfg.AIEmbedModel})
+	}
+	var answerer httpapi.Answerer
+	if cfg.AnthropicAPIKey != "" {
+		answerer = ai.NewClaude(ai.ClaudeConfig{APIKey: cfg.AnthropicAPIKey, Model: cfg.AIAnswerModel})
+	}
+	log.Info("AI szolgáltatók",
+		"embed_enabled", embedder != nil, "embed_model", cfg.AIEmbedModel,
+		"answer_enabled", answerer != nil, "answer_model", cfg.AIAnswerModel)
+
 	api := httpapi.New(httpapi.Options{
 		Store:           st,
 		Verifier:        verifier,
@@ -105,6 +121,9 @@ func run(log *slog.Logger) error {
 
 		CheckoutSuccessURL: cfg.CheckoutSuccessURL,
 		CheckoutCancelURL:  cfg.CheckoutCancelURL,
+
+		Embedder: embedder,
+		Answerer: answerer,
 	})
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

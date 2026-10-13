@@ -144,7 +144,9 @@ export type AuditAction =
   | 'entitlement.grant'
   | 'entitlement.revoke'
   | 'user.enable'
-  | 'user.disable';
+  | 'user.disable'
+  | 'ai.tokens_credit'
+  | 'ai.subscription';
 
 export type AuditEntry = {
   id: string;

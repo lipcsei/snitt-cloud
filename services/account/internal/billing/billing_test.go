@@ -113,3 +113,54 @@ func TestAsyncPaymentSucceededCompletesCheckout(t *testing.T) {
 		t.Errorf("késleltetett fizetés: %+v err=%v", ev, err)
 	}
 }
+
+func TestAIPlansAreNotSubscriptionPlans(t *testing.T) {
+	for _, key := range []string{"ai_monthly", "ai_tokens"} {
+		p, ok := LookupAnyPlan(key)
+		if !ok || !p.IsAI() || !p.SelfService || len(p.FeatureKeys) != 0 || p.AITokens <= 0 {
+			t.Errorf("%s = %+v", key, p)
+		}
+		if _, ok := LookupPlan(key); ok {
+			t.Errorf("a(z) %s nem lehet előfizetésként kiadható csomag", key)
+		}
+		for _, sp := range Plans() {
+			if sp.Key == key {
+				t.Errorf("a(z) %s nem szerepelhet a Plans() listában", key)
+			}
+		}
+	}
+	if m, _ := LookupAnyPlan("ai_monthly"); m.Lifetime || m.AITokens != 1_000_000 || m.PriceMinor != 299000 {
+		t.Errorf("ai_monthly = %+v", m)
+	}
+	if tk, _ := LookupAnyPlan("ai_tokens"); !tk.Lifetime || tk.AITokens != 500_000 || tk.PriceMinor != 199000 {
+		t.Errorf("ai_tokens = %+v", tk)
+	}
+	if got := ManagedFeatureKeys(); len(got) != 3 {
+		t.Errorf("a vezérelt jogosultságok nem változhatnak: %v", got)
+	}
+	if len(AllPlans()) != len(Plans())+2 {
+		t.Errorf("AllPlans = %d, Plans = %d", len(AllPlans()), len(Plans()))
+	}
+}
+
+func TestStripeOffersOnlyPricedPlans(t *testing.T) {
+	s := NewStripe(StripeConfig{PriceIDs: map[string]string{"monthly": "price_m", "ai_tokens": ""}})
+	if !s.Offers("monthly") || s.Offers("ai_tokens") || s.Offers("ai_monthly") {
+		t.Error("csak a beárazott csomag kínálható")
+	}
+}
+
+func TestInvoicePaidExposesSubscriptionMetadataAndPeriod(t *testing.T) {
+	now := time.Now()
+	payload := []byte(`{"id":"evt","type":"invoice.paid","data":{"object":{"id":"in_1","billing_reason":"subscription_cycle",
+		"amount_paid":299000,"currency":"huf",
+		"parent":{"subscription_details":{"subscription":"sub_ai","metadata":{"subject":"u","plan":"ai_monthly"}}},
+		"lines":{"data":[{"period":{"start":1700000000,"end":1702592000}}]}}}}`)
+	ev, err := NewStripe(StripeConfig{WebhookSecret: "w"}).ParseWebhook(payload, SignStripePayload(payload, "w", now), now)
+	if err != nil || ev.Kind != WebhookInvoicePaid || ev.SubscriptionID != "sub_ai" || ev.PlanKey != "ai_monthly" || ev.Subject != "u" {
+		t.Fatalf("esemény = %+v err=%v", ev, err)
+	}
+	if ev.PeriodStart.Unix() != 1700000000 || ev.PeriodEnd.Unix() != 1702592000 {
+		t.Errorf("időszak = %v - %v", ev.PeriodStart, ev.PeriodEnd)
+	}
+}

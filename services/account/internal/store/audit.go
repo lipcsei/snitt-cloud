@@ -21,6 +21,9 @@ const (
 	AuditEntitlementRevoke      = "entitlement.revoke"
 	AuditUserEnable             = "user.enable"
 	AuditUserDisable            = "user.disable"
+	// Az AI tárca változásai (csak a fizetési webhookból).
+	AuditAITokensCredit = "ai.tokens_credit"
+	AuditAISubscription = "ai.subscription"
 )
 
 // AuditActions a naplóban előforduló műveletek teljes listája, a felület
@@ -38,6 +41,8 @@ func AuditActions() []string {
 		AuditEntitlementRevoke,
 		AuditUserEnable,
 		AuditUserDisable,
+		AuditAITokensCredit,
+		AuditAISubscription,
 	}
 }
 

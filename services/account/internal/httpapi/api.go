@@ -56,6 +56,14 @@ type Store interface {
 	ApplyProviderUpdate(ctx context.Context, id string, upd store.ProviderUpdate, sync store.EntitlementSync) (store.Subscription, error)
 	ProviderEventSeen(ctx context.Context, provider, eventID string) (bool, error)
 	RecordProviderEvent(ctx context.Context, provider, eventID, eventType string) error
+
+	// Az AI tárca műveletei (lásd ai.go és a webhook AI ága).
+	AIWallet(ctx context.Context, subject string) (store.AIWallet, error)
+	AIWalletByExternalSubscription(ctx context.Context, externalID string) (store.AIWallet, error)
+	DebitAITokens(ctx context.Context, subject string, u store.NewAIUsage) (store.AIWallet, error)
+	CreditAITokens(ctx context.Context, subject string, tokens int64) (store.AIWallet, error)
+	SetAISubscription(ctx context.Context, subject string, in store.AISubscription) (store.AIWallet, error)
+	UpdateAISubscription(ctx context.Context, externalID string, upd store.AISubscriptionUpdate) (store.AIWallet, error)
 }
 
 // API a HTTP réteg összefogója.
@@ -71,6 +79,9 @@ type API struct {
 
 	checkoutSuccessURL string
 	checkoutCancelURL  string
+
+	embedder Embedder
+	answerer Answerer
 }
 
 // Options az API függőségei. Struct, mert a paraméterlista már túl hosszú
@@ -88,6 +99,10 @@ type Options struct {
 	// Ide tér vissza a böngésző az online fizetés után (sikeres / megszakított).
 	CheckoutSuccessURL string
 	CheckoutCancelURL  string
+
+	// A felhős AI szolgáltatók; nil = az adott végpont 503-at ad.
+	Embedder Embedder
+	Answerer Answerer
 }
 
 // New összeállítja az API-t.
@@ -113,6 +128,9 @@ func New(o Options) *API {
 
 		checkoutSuccessURL: o.CheckoutSuccessURL,
 		checkoutCancelURL:  o.CheckoutCancelURL,
+
+		embedder: o.Embedder,
+		answerer: o.Answerer,
 	}
 }
 
@@ -132,6 +150,11 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/plans", a.handlePublicPlans)
 	mux.Handle("POST /api/v1/checkout", protected(http.HandlerFunc(a.handleCheckout)))
 	mux.HandleFunc("POST /api/v1/billing/webhook", a.handleBillingWebhook)
+
+	// Felhős AI funkciók Snitt AI tokenből (lásd ai.go).
+	mux.Handle("GET /api/v1/ai/balance", protected(http.HandlerFunc(a.handleAIBalance)))
+	mux.Handle("POST /api/v1/ai/embed", protected(http.HandlerFunc(a.handleAIEmbed)))
+	mux.Handle("POST /api/v1/ai/answer", protected(http.HandlerFunc(a.handleAIAnswer)))
 
 	a.adminRoutes(mux)
 
