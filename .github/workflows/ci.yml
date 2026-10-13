@@ -10,6 +10,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# HOL FUT: a repó CI_RUNNER változója mondja meg. `self-hosted` értékkel a saját gépen futó runneren
+# megy, és nem fogyasztja a GitHub Actions keretét; ha a változó nincs beállítva, a GitHub gépén
+# (ubuntu-latest). A saját gépen egyszerre EGY CI-feladat fut (a runnerek közös zára: commons
+# ops/runner); a zárra várakozás beleszámít a feladat idejébe, ezért a `timeout-minutes` értékek 15
+# perccel nagyobbak annál, amit maga a feladat igényel.
+
 defaults:
   run:
     shell: bash
@@ -17,7 +23,7 @@ defaults:
 jobs:
   account-service:
     name: Account service (Go)
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     outputs:
       coverage: ${{ steps.coverage.outputs.pct }}
     defaults:
@@ -25,7 +31,9 @@ jobs:
         working-directory: services/account
     steps:
       - uses: actions/checkout@v4
+      # A saját gépen a gép Go-ja fut (közös fordítási gyorsítótár a helyi fejlesztéssel).
       - uses: actions/setup-go@v5
+        if: runner.environment == 'github-hosted'
         with:
           go-version-file: services/account/go.mod
           cache-dependency-path: services/account/go.sum
@@ -47,7 +55,7 @@ jobs:
 
   landing:
     name: Landing
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: landing
@@ -56,7 +64,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
+          cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
           cache-dependency-path: landing/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
@@ -69,7 +77,7 @@ jobs:
 
   admin:
     name: Admin felület
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: admin
@@ -78,7 +86,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
+          cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
@@ -168,8 +176,8 @@ jobs:
     name: Badge-ek
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [account-service]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
     continue-on-error: true
     permissions:
       contents: write
@@ -180,6 +188,9 @@ jobs:
       - name: SVG-k generálása és kitolása a badges ágra
         env:
           GH_TOKEN: ${{ github.token }}
+          # A saját gépen a felhasználó globális git-beállítása (insteadOf) SSH-ra írná át a címet, és
+          # a push a felhasználó nevében menne: itt a globális beállítás nem számít.
+          GIT_CONFIG_GLOBAL: /dev/null
           GO_COVERAGE: ${{ needs.account-service.outputs.coverage }}
         run: |
           out="$RUNNER_TEMP/badges" && mkdir -p "$out"
