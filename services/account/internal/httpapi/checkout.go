@@ -420,7 +420,13 @@ func (a *API) applyAICheckout(ctx context.Context, provider string, plan billing
 			Summary:    fmt.Sprintf("Online vásárlás: %s, %d AI token jóváírva, %s.", plan.Name, plan.AITokens, moneyText(ev.AmountMinor, currency)),
 			Detail:     map[string]any{"plan": plan.Key, "event": ev.ID, "provider": provider, "tokens": plan.AITokens, "purchased_tokens": w.PurchasedTokens},
 		})
-		return a.recordPaidInvoiceFor(ctx, provider, ev.Subject, nil, ev.AmountMinor, currency, ev.PaymentID, "Online fizetés: "+plan.Name+".")
+		// A jóváírás már megtörtént: ha most hibát adnánk, a Stripe újraküldené
+		// az eseményt, és a tokenek kétszer kerülnének a tárcába. A számla
+		// rögzítésének hibája ezért csak naplóba megy (a Stripe-ban megvan).
+		if err := a.recordPaidInvoiceFor(ctx, provider, ev.Subject, nil, ev.AmountMinor, currency, ev.PaymentID, "Online fizetés: "+plan.Name+"."); err != nil {
+			a.log.ErrorContext(ctx, "AI tokencsomag számlájának rögzítése sikertelen", "error", err, "subject", ev.Subject, "event", ev.ID)
+		}
+		return nil
 	}
 
 	if ev.SubscriptionID == "" {
